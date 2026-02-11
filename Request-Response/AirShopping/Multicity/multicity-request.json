@@ -1,0 +1,62 @@
+{
+  "pointOfSale": "BD",
+  "request": {
+    "originDest": [
+      {
+        "originDepRequest": {
+          "iatA_LocationCode": "DAC",
+          "date": "2026-03-15"
+        },
+        "destArrivalRequest": {
+          "iatA_LocationCode": "KUL"
+        }
+      },
+      {
+        "originDepRequest": {
+          "iatA_LocationCode": "DAC",
+          "date": "2026-03-20"
+        },
+        "destArrivalRequest": {
+          "iatA_LocationCode": "DXB"
+        }
+      },
+      {
+        "originDepRequest": {
+          "iatA_LocationCode": "DAC",
+          "date": "2026-03-25"
+        },
+        "destArrivalRequest": {
+          "iatA_LocationCode": "BKK"
+        }
+      }
+    ],
+    "pax": [
+      {
+        "paxID": "PAX1",
+        "ptc": "ADT"
+      },
+      {
+        "paxID": "PAX2",
+        "ptc": "ADT"
+      },
+      {
+        "paxID": "PAX3",
+        "ptc": "C08"
+      },
+      {
+        "paxID": "PAX4",
+        "ptc": "INF",
+        "infantRef": "PAX1"
+      }
+    ],
+    "shoppingCriteria": {
+      "tripType": "Circle",
+      "travelPreferences": {
+        "vendorPref": [],
+        "cabinCode": "Economy"
+      },
+      "returnUPSellInfo": true,
+      "preferCombine": true
+    }
+  }
+}

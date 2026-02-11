@@ -1,0 +1,275 @@
+'use client'
+
+import { Search, Filter, ChevronDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+
+import { BookingHistoryTable, type Booking } from '@/components/bookings/BookingHistoryTable'
+import { TabBar } from '@/components/tab/TabBar'
+import { TicketStatusTabs } from '@/components/tab/TicketStatusTabs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useSidebar } from '@/context/sidebar-context'
+import { cn } from '@/lib/utils'
+
+export default function BookingsPage() {
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState(0)
+  const [activeTicketStatus, setActiveTicketStatus] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [refLoading, setRefLoading] = useState<string | null>(null)
+  const [refError, setRefError] = useState<string | null>(null)
+  const { isSidebarCollapsed: _isSidebarCollapsed } = useSidebar()
+
+  useEffect(() => {
+    let cancelled = false
+    setBookingsLoading(true)
+    fetch('/api/bookings')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Booking[]) => {
+        if (!cancelled) setBookings(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!cancelled) setBookings([])
+      })
+      .finally(() => {
+        if (!cancelled) setBookingsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const filteredBookings = useMemo(() => {
+    if (activeTicketStatus === 'all') {
+      return bookings
+    }
+    return bookings.filter((booking) => {
+      const statusMap: Record<string, Booking['status']> = {
+        'on-hold': 'on-hold',
+        pending: 'pending',
+        'in-progress': 'in-progress',
+        confirmed: 'confirmed',
+        expired: 'expired',
+        unconfirmed: 'unconfirmed',
+        cancelled: 'cancelled',
+      }
+      return booking.status === statusMap[activeTicketStatus]
+    })
+  }, [bookings, activeTicketStatus])
+
+  const handleReferenceClick = useCallback(
+    async (referenceNo: string) => {
+      setRefError(null)
+      setRefLoading(referenceNo)
+      try {
+        const res = await fetch('/api/flight/orderretrieve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderReference: referenceNo }),
+        })
+        const data = (await res.json()) as {
+          success?: boolean
+          response?: { orderReference?: string }
+          Response?: { orderReference?: string }
+          error?: { errorMessage?: string } | string
+          message?: string
+          details?: string
+        }
+        const orderData = data?.response ?? data?.Response
+        const hasOrder =
+          data?.success && orderData && typeof orderData === 'object' && orderData.orderReference
+
+        if (hasOrder) {
+          // Sync to Firestore (background, don't block)
+          fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderReference: referenceNo }),
+          }).catch(() => {})
+
+          router.push(`/booking-order?orderRef=${encodeURIComponent(referenceNo)}`)
+        } else {
+          const apiErrorCandidates: Array<unknown> = [
+            typeof data?.error === 'object' && data.error !== null
+              ? (data.error as { errorMessage?: unknown }).errorMessage
+              : null,
+            (data as { errorMessage?: unknown } | null)?.errorMessage,
+            typeof data?.error === 'string' ? data.error : null,
+            (data as { message?: unknown } | null)?.message,
+            (data as { details?: unknown } | null)?.details,
+          ]
+
+          const err =
+            apiErrorCandidates.find(
+              (v): v is string => typeof v === 'string' && v.trim().length > 0,
+            ) ?? null
+
+          setRefError(err ?? 'Order not found or no longer available')
+        }
+      } catch (e) {
+        setRefError(e instanceof Error ? e.message : 'Failed to load order')
+      } finally {
+        setRefLoading(null)
+      }
+    },
+    [router],
+  )
+
+  const handleBookingAction = useCallback(
+    async (action: 'view' | 'edit' | 'delete' | 'refresh', booking: Booking) => {
+      setRefError(null)
+
+      switch (action) {
+        case 'view':
+          // Navigate to booking details
+          router.push(`/booking-order?orderRef=${encodeURIComponent(booking.referenceNo)}`)
+          break
+
+        case 'refresh':
+          // Refresh the booking data
+          await handleReferenceClick(booking.referenceNo)
+          break
+
+        case 'edit':
+          // For now, redirect to booking order page (can be enhanced later)
+          router.push(`/booking-order?orderRef=${encodeURIComponent(booking.referenceNo)}`)
+          break
+
+        case 'delete':
+          // Show confirmation and delete booking
+          if (
+            window.confirm(
+              `Are you sure you want to delete booking ${booking.referenceNo}? This action cannot be undone.`,
+            )
+          ) {
+            try {
+              const res = await fetch('/api/bookings', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderReference: booking.referenceNo }),
+              })
+
+              if (res.ok) {
+                // Refresh bookings list
+                setBookings((prev) => prev.filter((b) => b.referenceNo !== booking.referenceNo))
+                alert('Booking deleted successfully')
+              } else {
+                const errorData = (await res.json()) as { error?: string }
+                setRefError(errorData.error || 'Failed to delete booking')
+              }
+            } catch (_error) {
+              setRefError('Failed to delete booking')
+            }
+          }
+          break
+
+        default:
+          console.warn('Unknown booking action:', action)
+      }
+    },
+    [router, handleReferenceClick],
+  )
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      {/* TabBar and TicketStatusTabs container positioned below header */}
+      <div
+        className="w-full bg-white dark:bg-neutral-950 border-b border-gray-200/80 dark:border-white/10"
+      >
+        <TabBar activeTab={activeTab} onTabChange={setActiveTab} tabType="booking" />
+        {/* TicketStatusTabs positioned immediately below main TabBar */}
+        {activeTab === 0 && (
+          <TicketStatusTabs activeTab={activeTicketStatus} onTabChange={setActiveTicketStatus} />
+        )}
+        {/* Filter & Sort bar directly under status tabs */}
+        {activeTab === 0 && (
+          <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2 px-4 md:px-6 py-3 bg-gray-50/50 dark:bg-white/5 border-t border-gray-200/80 dark:border-white/10">
+            <div className="relative flex-1 w-full md:max-w-sm">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Ref No, PNR, Name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 pr-3 text-xs rounded-md border border-gray-300 dark:border-white/20 bg-white dark:bg-neutral-950 shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary w-full"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilter((v) => !v)}
+              className="h-8 gap-1.5 px-3 text-xs font-medium bg-white dark:bg-neutral-950 border border-gray-300 dark:border-white/20 w-full md:w-auto"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Advanced Filter
+              <ChevronDown
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform',
+                  showAdvancedFilter && 'rotate-180',
+                )}
+              />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Main content with padding-top to account for tab bars + filter bar */}
+      <main className="flex-1 pt-[calc(3.5rem+3.75rem+4rem+2rem)]">
+        <div className="w-full max-w-[100vw] px-4 md:px-6 py-6">
+          {activeTab === 0 && (
+            <>
+              {bookingsLoading ? (
+                <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Loading bookings…
+                </div>
+              ) : (
+                <>
+                  {refError && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+                      {refError}
+                      <button
+                        type="button"
+                        onClick={() => setRefError(null)}
+                        className="ml-2 underline hover:no-underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                  <BookingHistoryTable
+                    bookings={filteredBookings}
+                    onReferenceClick={(ref) => void handleReferenceClick(ref)}
+                    refLoading={refLoading}
+                    searchQuery={searchQuery}
+                    onSearchQueryChange={setSearchQuery}
+                    showAdvancedFilter={showAdvancedFilter}
+                    onAdvancedFilterToggle={setShowAdvancedFilter}
+                    onBookingAction={(action, booking) => {
+                      void handleBookingAction(action, booking)
+                    }}
+                  />
+                </>
+              )}
+            </>
+          )}
+          {activeTab === 1 && (
+            <div>
+              <h1 className="text-2xl font-bold mb-4">Refund Requests</h1>
+              <p>Manage your refund requests here.</p>
+            </div>
+          )}
+          {activeTab === 2 && (
+            <div>
+              <h1 className="text-2xl font-bold mb-4">Add-ons</h1>
+              <p>Manage your add-ons here.</p>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}

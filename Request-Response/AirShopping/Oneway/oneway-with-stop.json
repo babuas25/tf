@@ -1,0 +1,1221 @@
+{
+    "message": "",
+    "requestedOn": "2026-01-02T05:29:00.283174Z",
+    "respondedOn": "2026-01-02T05:29:09.043182Z",
+    "response": {
+        "offersGroup": [
+            {
+                "offer": {
+                    "twoOnewayIndex": null,
+                    "offerId": "14f45755-8856-447e-aff9-2749032daa7c",
+                    "validatingCarrier": "AC",
+                    "refundable": false,
+                    "fareType": "OnHold",
+                    "paxSegmentList": [
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-26T02:00:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "BKK",
+                                    "terminalName": "",
+                                    "aircraftScheduledDateTime": "2026-03-26T05:30:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "AC",
+                                    "marketingCarrierFlightNumber": "7423",
+                                    "carrierName": "Air Canada"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "TG",
+                                    "carrierName": "THAI Airways"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "320"
+                                },
+                                "rbd": "T",
+                                "flightNumber": "7423",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "150",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "BKK",
+                                    "terminalName": "",
+                                    "aircraftScheduledDateTime": "2026-03-26T07:15:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "YVR",
+                                    "terminalName": "M",
+                                    "aircraftScheduledDateTime": "2026-03-26T06:35:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "AC",
+                                    "marketingCarrierFlightNumber": "66",
+                                    "carrierName": "Air Canada"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "AC",
+                                    "carrierName": "Air Canada"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "789"
+                                },
+                                "rbd": "T",
+                                "flightNumber": "66",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "800",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "YVR",
+                                    "terminalName": "M",
+                                    "aircraftScheduledDateTime": "2026-03-26T08:45:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "YYZ",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-26T16:09:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "AC",
+                                    "marketingCarrierFlightNumber": "104",
+                                    "carrierName": "Air Canada"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "AC",
+                                    "carrierName": "Air Canada"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "789"
+                                },
+                                "rbd": "T",
+                                "flightNumber": "104",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "264",
+                                "cabinType": "Economy"
+                            }
+                        }
+                    ],
+                    "fareDetailList": [
+                        {
+                            "fareDetail": {
+                                "baseFare": 82897,
+                                "tax": 37652,
+                                "otherFee": 0,
+                                "discount": 4157,
+                                "vat": 404,
+                                "currency": "BDT",
+                                "paxType": "Adult",
+                                "paxCount": 2,
+                                "subTotal": 233592
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 62198,
+                                "tax": 34652,
+                                "otherFee": 0,
+                                "discount": 3130,
+                                "vat": 323,
+                                "currency": "BDT",
+                                "paxType": "Child",
+                                "paxCount": 1,
+                                "subTotal": 94043
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 8429,
+                                "tax": 3007,
+                                "otherFee": 0,
+                                "discount": 463,
+                                "vat": 39,
+                                "currency": "BDT",
+                                "paxType": "Infant",
+                                "paxCount": 1,
+                                "subTotal": 11012
+                            }
+                        }
+                    ],
+                    "price": {
+                        "totalPayable": {
+                            "total": 338647,
+                            "curreny": "BDT"
+                        },
+                        "gross": {
+                            "total": 349384,
+                            "curreny": "BDT"
+                        },
+                        "discount": {
+                            "total": 11907,
+                            "curreny": "BDT"
+                        },
+                        "totalVAT": {
+                            "total": 1170,
+                            "curreny": "BDT"
+                        },
+                        "additionalMealCharges": null,
+                        "additionalBaggageCharges": null,
+                        "additionalSeatCharges": null
+                    },
+                    "penalty": null,
+                    "baggageAllowanceList": [
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "YYZ",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "0P"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "0P"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "0P"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "upSellBrandList": [
+                        {
+                            "upSellBrand": {
+                                "offerId": "14f45755-8856-447e-aff9-2749032daa7c",
+                                "brandName": "Basic",
+                                "refundable": false,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 82897,
+                                            "tax": 37652,
+                                            "otherFee": 0,
+                                            "discount": 4157,
+                                            "vat": 404,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 233592
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 62198,
+                                            "tax": 34652,
+                                            "otherFee": 0,
+                                            "discount": 3130,
+                                            "vat": 323,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 94043
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 8429,
+                                            "tax": 3007,
+                                            "otherFee": 0,
+                                            "discount": 463,
+                                            "vat": 39,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 11012
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 338647,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 349384,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 11907,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "0P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "0P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "0P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "T;T;T",
+                                "meal": true,
+                                "seat": "Advanced seat selection with charge",
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "a7894035-5ca1-43ef-9f50-c7d28291c181",
+                                "brandName": "Standard",
+                                "refundable": false,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 96982,
+                                            "tax": 37652,
+                                            "otherFee": 0,
+                                            "discount": 4855,
+                                            "vat": 453,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 260464
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 72731,
+                                            "tax": 34652,
+                                            "otherFee": 0,
+                                            "discount": 3652,
+                                            "vat": 359,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 104090
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 9776,
+                                            "tax": 3007,
+                                            "otherFee": 0,
+                                            "discount": 530,
+                                            "vat": 44,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 12297
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 376851,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 389434,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 13892,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "1P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "1P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "1P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "T;T;T",
+                                "meal": true,
+                                "seat": "Advanced seat selection with charge",
+                                "miles": "Miles accrual",
+                                "refundAllowed": false,
+                                "exchangeAllowed": true
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "7c6087be-21fb-4977-8e00-023dae48f51b",
+                                "brandName": "FLEX",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 107128,
+                                            "tax": 38220,
+                                            "otherFee": 0,
+                                            "discount": 4181,
+                                            "vat": 472,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 283278
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 80864,
+                                            "tax": 35220,
+                                            "otherFee": 0,
+                                            "discount": 3138,
+                                            "vat": 374,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 113320
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 12626,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 429,
+                                            "vat": 46,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 15264
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 411862,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 422427,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 11929,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "T;T;T",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "94c1df67-cfd7-4211-9f17-057c04631dab",
+                                "brandName": "COMFORT",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 127668,
+                                            "tax": 38220,
+                                            "otherFee": 0,
+                                            "discount": 4984,
+                                            "vat": 541,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 322890
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 96372,
+                                            "tax": 35220,
+                                            "otherFee": 0,
+                                            "discount": 3742,
+                                            "vat": 426,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 128276
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 14879,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 507,
+                                            "vat": 52,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 17445
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 468611,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 481268,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 14217,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "T;T;T",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "b83584a0-cb83-46be-97bc-5567e6b1b0b5",
+                                "brandName": "PREMIUM ECONOMY LOWEST",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 217915,
+                                            "tax": 38220,
+                                            "otherFee": 0,
+                                            "discount": 8518,
+                                            "vat": 844,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 496922
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 164405,
+                                            "tax": 35220,
+                                            "otherFee": 0,
+                                            "discount": 6393,
+                                            "vat": 652,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 193884
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 25106,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 862,
+                                            "vat": 83,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 27348
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 718154,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 740022,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 24291,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "G;E;E",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "f4f64e24-554f-47ea-8a28-c4bcea105157",
+                                "brandName": "PREMIUM ECONOMY FLEXIBLE",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 280154,
+                                            "tax": 38220,
+                                            "otherFee": 0,
+                                            "discount": 10954,
+                                            "vat": 1052,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 616944
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 211302,
+                                            "tax": 35220,
+                                            "otherFee": 0,
+                                            "discount": 8220,
+                                            "vat": 809,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 239111
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 32117,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 1106,
+                                            "vat": 103,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 34135
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 890190,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 918408,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 31234,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "G;E;E",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "ad62bbf5-ecac-4560-bdc3-28c9e9d1c296",
+                                "brandName": "LATITUDE",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 803712,
+                                            "tax": 38220,
+                                            "otherFee": 0,
+                                            "discount": 31447,
+                                            "vat": 2806,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 1626582
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 605749,
+                                            "tax": 35220,
+                                            "otherFee": 0,
+                                            "discount": 23588,
+                                            "vat": 2124,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 619505
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 91019,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 3153,
+                                            "vat": 279,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 91166
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 2337253,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 2418873,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 89635,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "B;B;B",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "d4e5c9e9-08cf-4be3-a4f5-912fab0d16af",
+                                "brandName": "BUSINESS LOWEST",
+                                "refundable": false,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 1257557,
+                                            "tax": 54784,
+                                            "otherFee": 0,
+                                            "discount": 49143,
+                                            "vat": 4370,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 2535136
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 1257557,
+                                            "tax": 51784,
+                                            "otherFee": 0,
+                                            "discount": 49143,
+                                            "vat": 4361,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 1264559
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 132123,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 4463,
+                                            "vat": 391,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 131072
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 3930767,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 4069167,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 151892,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "C;C;P",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "cd1de9bc-6c13-46a0-8c08-903dd05d0eb7",
+                                "brandName": "BUSINESS FLEXIBLE",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 1377939,
+                                            "tax": 54784,
+                                            "otherFee": 0,
+                                            "discount": 53850,
+                                            "vat": 4772,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 2767290
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 1377939,
+                                            "tax": 51784,
+                                            "otherFee": 0,
+                                            "discount": 53850,
+                                            "vat": 4763,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 1380636
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 143152,
+                                            "tax": 3021,
+                                            "otherFee": 0,
+                                            "discount": 4828,
+                                            "vat": 423,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 141768
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 4289694,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 4441342,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 166378,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "YYZ",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "2P"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "2P"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "C;C;P",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": false,
+                                "exchangeAllowed": false
+                            }
+                        }
+                    ],
+                    "seatsRemaining": "9",
+                    "source": 4,
+                    "nearByAirport": null
+                }
+            }
+],
+"specialReturn": false,
+"specialReturnOffersGroup": null,
+"moreOffersAvailableAirline": [
+    "EK",
+    "AC",
+    "QR"
+],
+"traceId": "629c3ea7-e641-47df-ba05-956856838f2d"
+},
+"statusCode": "OK",
+"success": true,
+"error": null,
+"info": [
+"PostmanRuntime/7.51.0"
+]
+}

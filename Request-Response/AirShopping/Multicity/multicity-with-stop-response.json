@@ -1,0 +1,408 @@
+{
+    "message": "",
+    "requestedOn": "2026-01-13T18:34:03.7583913Z",
+    "respondedOn": "2026-01-13T18:34:10.229161Z",
+    "response": {
+        "offersGroup": [
+            {
+                "offer": {
+                    "twoOnewayIndex": null,
+                    "offerId": "8cf0ba7c-1783-4ff3-98f6-003eb83c802c",
+                    "validatingCarrier": "CZ",
+                    "refundable": true,
+                    "fareType": "OnHold",
+                    "paxSegmentList": [
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-15T12:50:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-15T18:10:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "5016",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "32Q"
+                                },
+                                "rbd": "M",
+                                "flightNumber": "5016",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "200",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-15T19:55:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "KUL",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-16T00:15:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "5035",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "7M8"
+                                },
+                                "rbd": "M",
+                                "flightNumber": "5035",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "260",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-20T23:15:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-21T04:45:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "392",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "32Q"
+                                },
+                                "rbd": "Q",
+                                "flightNumber": "392",
+                                "segmentGroup": 1,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "210",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-21T13:20:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "DXB",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-21T18:20:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "8057",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "333"
+                                },
+                                "rbd": "Q",
+                                "flightNumber": "8057",
+                                "segmentGroup": 1,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "540",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-25T12:50:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-25T18:10:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "5016",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "32Q"
+                                },
+                                "rbd": "M",
+                                "flightNumber": "5016",
+                                "segmentGroup": 2,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "200",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "CAN",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-25T23:00:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "BKK",
+                                    "terminalName": "",
+                                    "aircraftScheduledDateTime": "2026-03-26T01:05:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "marketingCarrierFlightNumber": "3035",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "CZ",
+                                    "carrierName": "China Southern Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "738"
+                                },
+                                "rbd": "M",
+                                "flightNumber": "3035",
+                                "segmentGroup": 2,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "185",
+                                "cabinType": "Economy"
+                            }
+                        }
+                    ],
+                    "fareDetailList": [
+                        {
+                            "fareDetail": {
+                                "baseFare": 265256,
+                                "tax": 63478,
+                                "otherFee": 0,
+                                "discount": 13202,
+                                "vat": 1118,
+                                "currency": "BDT",
+                                "paxType": "Adult",
+                                "paxCount": 2,
+                                "subTotal": 633300
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 198968,
+                                "tax": 47834,
+                                "otherFee": 0,
+                                "discount": 9914,
+                                "vat": 841,
+                                "currency": "BDT",
+                                "paxType": "Child",
+                                "paxCount": 1,
+                                "subTotal": 237729
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 26615,
+                                "tax": 11582,
+                                "otherFee": 0,
+                                "discount": 1366,
+                                "vat": 129,
+                                "currency": "BDT",
+                                "paxType": "Infant",
+                                "paxCount": 1,
+                                "subTotal": 36960
+                            }
+                        }
+                    ],
+                    "price": {
+                        "totalPayable": {
+                            "total": 907989,
+                            "curreny": "BDT"
+                        },
+                        "gross": {
+                            "total": 942467,
+                            "curreny": "BDT"
+                        },
+                        "discount": {
+                            "total": 37684,
+                            "curreny": "BDT"
+                        },
+                        "totalVAT": {
+                            "total": 3206,
+                            "curreny": "BDT"
+                        },
+                        "additionalMealCharges": null,
+                        "additionalBaggageCharges": null,
+                        "additionalSeatCharges": null
+                    },
+                    "penalty": null,
+                    "baggageAllowanceList": [
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "KUL",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "1P"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "DXB",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "1P"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "BKK",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "1P"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "upSellBrandList": null,
+                    "seatsRemaining": "9",
+                    "source": 4,
+                    "nearByAirport": null
+                }
+            }
+        ],
+        "specialReturn": false,
+        "specialReturnOffersGroup": null,
+        "moreOffersAvailableAirline": [
+            "CZ",
+            "BS"
+        ],
+        "traceId": "9ef4ae72-1648-47d4-8d72-2f3bdeca1b0b"
+    },
+    "statusCode": "OK",
+    "success": true,
+    "error": null,
+    "info": [
+        "PostmanRuntime/7.51.0"
+    ]
+}

@@ -1,0 +1,669 @@
+{
+    "message": "",
+    "requestedOn": "2026-01-13T18:34:03.7583913Z",
+    "respondedOn": "2026-01-13T18:34:10.229161Z",
+    "response": {
+        "offersGroup": [
+            {
+                "offer": {
+                    "twoOnewayIndex": null,
+                    "offerId": "d7b44caf-fd18-4448-9324-77aeac482988",
+                    "validatingCarrier": "BS",
+                    "refundable": true,
+                    "fareType": "OnHold",
+                    "paxSegmentList": [
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-15T08:05:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "KUL",
+                                    "terminalName": "M",
+                                    "aircraftScheduledDateTime": "2026-03-15T14:00:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "marketingCarrierFlightNumber": "315",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "333"
+                                },
+                                "rbd": "K",
+                                "flightNumber": "315",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "235",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-20T06:15:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "DXB",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-20T11:55:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "marketingCarrierFlightNumber": "343",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "738"
+                                },
+                                "rbd": "E",
+                                "flightNumber": "343",
+                                "segmentGroup": 1,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": [
+                                    {
+                                        "iatA_LocationCode": "CGP",
+                                        "aircraftScheduledArrivalDateTime": "2026-03-20T07:10:00Z",
+                                        "aircraftScheduledDepartureDateTime": "2026-03-20T08:00:00Z",
+                                        "arrivalTerminalName": "1",
+                                        "departureTerminalName": "1"
+                                    }
+                                ],
+                                "duration": "460",
+                                "cabinType": "Economy"
+                            }
+                        },
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-25T09:20:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "BKK",
+                                    "terminalName": "1",
+                                    "aircraftScheduledDateTime": "2026-03-25T13:10:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "marketingCarrierFlightNumber": "217",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "BS",
+                                    "carrierName": "US-Bangla Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "738"
+                                },
+                                "rbd": "T",
+                                "flightNumber": "217",
+                                "segmentGroup": 2,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": null,
+                                "duration": "170",
+                                "cabinType": "Economy"
+                            }
+                        }
+                    ],
+                    "fareDetailList": [
+                        {
+                            "fareDetail": {
+                                "baseFare": 60728,
+                                "tax": 27534,
+                                "otherFee": 0,
+                                "discount": 3057,
+                                "vat": 296,
+                                "currency": "BDT",
+                                "paxType": "Adult",
+                                "paxCount": 2,
+                                "subTotal": 171002
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 45540,
+                                "tax": 21534,
+                                "otherFee": 0,
+                                "discount": 2304,
+                                "vat": 224,
+                                "currency": "BDT",
+                                "paxType": "Child",
+                                "paxCount": 1,
+                                "subTotal": 64994
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 15288,
+                                "tax": 8642,
+                                "otherFee": 0,
+                                "discount": 804,
+                                "vat": 80,
+                                "currency": "BDT",
+                                "paxType": "Infant",
+                                "paxCount": 1,
+                                "subTotal": 23206
+                            }
+                        }
+                    ],
+                    "price": {
+                        "totalPayable": {
+                            "total": 259202,
+                            "curreny": "BDT"
+                        },
+                        "gross": {
+                            "total": 267528,
+                            "curreny": "BDT"
+                        },
+                        "discount": {
+                            "total": 9222,
+                            "curreny": "BDT"
+                        },
+                        "totalVAT": {
+                            "total": 896,
+                            "curreny": "BDT"
+                        },
+                        "additionalMealCharges": null,
+                        "additionalBaggageCharges": null,
+                        "additionalSeatCharges": null
+                    },
+                    "penalty": null,
+                    "baggageAllowanceList": [
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "KUL",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "10KG"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "DXB",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "10KG"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "BKK",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "30KG"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "10KG"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "upSellBrandList": [
+                        {
+                            "upSellBrand": {
+                                "offerId": "d7b44caf-fd18-4448-9324-77aeac482988",
+                                "brandName": "Economy Light-Economy Saver",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 60728,
+                                            "tax": 27534,
+                                            "otherFee": 0,
+                                            "discount": 3057,
+                                            "vat": 296,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 171002
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 45540,
+                                            "tax": 21534,
+                                            "otherFee": 0,
+                                            "discount": 2304,
+                                            "vat": 224,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 64994
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 15288,
+                                            "tax": 8642,
+                                            "otherFee": 0,
+                                            "discount": 804,
+                                            "vat": 80,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 23206
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 259202,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 267528,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 9222,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "KUL",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "DXB",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "BKK",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "K;E;T",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": true,
+                                "exchangeAllowed": true
+                            }
+                        },
+                        {
+                            "upSellBrand": {
+                                "offerId": "996fc607-47a2-4f3f-9a03-c17b6be94cc3",
+                                "brandName": "Economy Saver-Economy Value",
+                                "refundable": true,
+                                "fareDetailList": [
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 85224,
+                                            "tax": 27534,
+                                            "otherFee": 0,
+                                            "discount": 4272,
+                                            "vat": 381,
+                                            "currency": "BDT",
+                                            "paxType": "Adult",
+                                            "paxCount": 2,
+                                            "subTotal": 217734
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 63912,
+                                            "tax": 21534,
+                                            "otherFee": 0,
+                                            "discount": 3215,
+                                            "vat": 289,
+                                            "currency": "BDT",
+                                            "paxType": "Child",
+                                            "paxCount": 1,
+                                            "subTotal": 82520
+                                        }
+                                    },
+                                    {
+                                        "fareDetail": {
+                                            "baseFare": 21412,
+                                            "tax": 8642,
+                                            "otherFee": 0,
+                                            "discount": 1107,
+                                            "vat": 101,
+                                            "currency": "BDT",
+                                            "paxType": "Infant",
+                                            "paxCount": 1,
+                                            "subTotal": 29048
+                                        }
+                                    }
+                                ],
+                                "price": {
+                                    "totalPayable": {
+                                        "total": 329302,
+                                        "curreny": "BDT"
+                                    },
+                                    "gross": {
+                                        "total": 341016,
+                                        "curreny": "BDT"
+                                    },
+                                    "discount": {
+                                        "total": 12866,
+                                        "curreny": "BDT"
+                                    },
+                                    "totalVAT": null,
+                                    "additionalMealCharges": null,
+                                    "additionalBaggageCharges": null,
+                                    "additionalSeatCharges": null
+                                },
+                                "penalty": null,
+                                "baggageAllowanceList": [
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "KUL",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "DXB",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "baggageAllowance": {
+                                            "departure": "DAC",
+                                            "arrival": "BKK",
+                                            "checkIn": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "30KG"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "10KG"
+                                                }
+                                            ],
+                                            "cabin": [
+                                                {
+                                                    "paxType": "Adult",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Child",
+                                                    "allowance": "SB"
+                                                },
+                                                {
+                                                    "paxType": "Infant",
+                                                    "allowance": "SB"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "rbd": "O;T;U",
+                                "meal": true,
+                                "seat": null,
+                                "miles": null,
+                                "refundAllowed": true,
+                                "exchangeAllowed": true
+                            }
+                        }
+                    ],
+                    "seatsRemaining": "9",
+                    "source": 4,
+                    "nearByAirport": null
+                }
+            }
+        ],
+        "specialReturn": false,
+        "specialReturnOffersGroup": null,
+        "moreOffersAvailableAirline": [
+            "CZ",
+            "BS"
+        ],
+        "traceId": "9ef4ae72-1648-47d4-8d72-2f3bdeca1b0b"
+    },
+    "statusCode": "OK",
+    "success": true,
+    "error": null,
+    "info": [
+        "PostmanRuntime/7.51.0"
+    ]
+}

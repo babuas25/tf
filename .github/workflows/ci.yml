@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latest
+    
+    env:
+      # NextAuth Configuration
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      
+      # Firebase Configuration (Server-side)
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      
+      # OAuth Providers
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
+      FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
+      
+      # Database
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      
+      # Admin Configuration
+      SUPER_ADMIN_EMAILS: ${{ secrets.SUPER_ADMIN_EMAILS }}
+      NEXT_PUBLIC_SUPER_ADMIN_EMAILS: ${{ vars.NEXT_PUBLIC_SUPER_ADMIN_EMAILS }}
+      
+      # Firebase Configuration (Client-side - Public)
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_MEASUREMENT_ID }}
+      
+      # Optional: Error Monitoring
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+      NEXT_PUBLIC_APP_VERSION: ${{ vars.NEXT_PUBLIC_APP_VERSION }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      
+      # Optional: Rate Limiting
+      RATE_LIMIT_ENABLED: ${{ vars.RATE_LIMIT_ENABLED }}
+      RATE_LIMIT_REDIS_URL: ${{ secrets.RATE_LIMIT_REDIS_URL }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint (strict)
+        run: npm run lint:strict
+      - name: Build
+        run: npm run build

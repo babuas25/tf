@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://tripfeels.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /users/admin/
+Disallow: /users/staff/
+Disallow: /users/partner/
+Disallow: /users/agent/
+Disallow: /users/publicuser/
+
+# Allow public pages
+Allow: /
+Allow: /auth
+Allow: /theme-demo

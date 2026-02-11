@@ -1,0 +1,467 @@
+{
+    "message": "",
+    "requestedOn": "2026-01-13T18:08:28.6877314Z",
+    "respondedOn": "2026-01-13T18:08:31.0233215Z",
+    "response": {
+        "offersGroup": null,
+        "specialReturn": true,
+        "specialReturnOffersGroup": {
+            "ob": [
+                {
+                    "offer": {
+                        "twoOnewayIndex": "OB",
+                        "offerId": "117c1244-ef89-4b20-a5b8-d66447769616_OB",
+                        "validatingCarrier": "2A",
+                        "refundable": true,
+                        "fareType": "OnHold",
+                        "paxSegmentList": [
+                            {
+                                "paxSegment": {
+                                    "departure": {
+                                        "iatA_LocationCode": "DAC",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-10T10:30:00Z"
+                                    },
+                                    "arrival": {
+                                        "iatA_LocationCode": "CGP",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-10T11:25:00Z"
+                                    },
+                                    "marketingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "marketingCarrierFlightNumber": "415",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "operatingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "iatA_AircraftType": {
+                                        "iatA_AircraftTypeCode": "AT7"
+                                    },
+                                    "rbd": "E",
+                                    "flightNumber": "415",
+                                    "segmentGroup": 0,
+                                    "returnJourney": false,
+                                    "airlinePNR": null,
+                                    "technicalStopOver": null,
+                                    "duration": "55",
+                                    "cabinType": "Economy"
+                                }
+                            }
+                        ],
+                        "fareDetailList": [
+                            {
+                                "fareDetail": {
+                                    "baseFare": 3560,
+                                    "tax": 1175,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 16,
+                                    "currency": "BDT",
+                                    "paxType": "Adult",
+                                    "paxCount": 2,
+                                    "subTotal": 9102
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 2670,
+                                    "tax": 1075,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 14,
+                                    "currency": "BDT",
+                                    "paxType": "Child",
+                                    "paxCount": 1,
+                                    "subTotal": 3559
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 356,
+                                    "tax": 246,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 4,
+                                    "currency": "BDT",
+                                    "paxType": "Infant",
+                                    "paxCount": 1,
+                                    "subTotal": 406
+                                }
+                            }
+                        ],
+                        "price": {
+                            "totalPayable": {
+                                "total": 13067,
+                                "curreny": "BDT"
+                            },
+                            "gross": {
+                                "total": 13817,
+                                "curreny": "BDT"
+                            },
+                            "discount": {
+                                "total": 800,
+                                "curreny": "BDT"
+                            },
+                            "totalVAT": {
+                                "total": 50,
+                                "curreny": "BDT"
+                            },
+                            "additionalMealCharges": null,
+                            "additionalBaggageCharges": null,
+                            "additionalSeatCharges": null
+                        },
+                        "penalty": null,
+                        "baggageAllowanceList": [
+                            {
+                                "baggageAllowance": {
+                                    "departure": "DAC",
+                                    "arrival": "CGP",
+                                    "checkIn": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "10Kg"
+                                        }
+                                    ],
+                                    "cabin": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "7Kg"
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "upSellBrandList": null,
+                        "seatsRemaining": "9",
+                        "source": 6,
+                        "nearByAirport": null
+                    }
+                }
+            ],
+            "ib": [
+                {
+                    "offer": {
+                        "twoOnewayIndex": "IB",
+                        "offerId": "200eb12e-623d-410f-b118-d17afa2a021d_IB",
+                        "validatingCarrier": "2A",
+                        "refundable": true,
+                        "fareType": "OnHold",
+                        "paxSegmentList": [
+                            {
+                                "paxSegment": {
+                                    "departure": {
+                                        "iatA_LocationCode": "CGP",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-12T11:50:00Z"
+                                    },
+                                    "arrival": {
+                                        "iatA_LocationCode": "DAC",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-12T12:45:00Z"
+                                    },
+                                    "marketingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "marketingCarrierFlightNumber": "416",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "operatingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "iatA_AircraftType": {
+                                        "iatA_AircraftTypeCode": "AT7"
+                                    },
+                                    "rbd": "E",
+                                    "flightNumber": "416",
+                                    "segmentGroup": 0,
+                                    "returnJourney": false,
+                                    "airlinePNR": null,
+                                    "technicalStopOver": null,
+                                    "duration": "55",
+                                    "cabinType": "Economy"
+                                }
+                            }
+                        ],
+                        "fareDetailList": [
+                            {
+                                "fareDetail": {
+                                    "baseFare": 3560,
+                                    "tax": 1175,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 16,
+                                    "currency": "BDT",
+                                    "paxType": "Adult",
+                                    "paxCount": 2,
+                                    "subTotal": 9102
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 2670,
+                                    "tax": 1075,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 14,
+                                    "currency": "BDT",
+                                    "paxType": "Child",
+                                    "paxCount": 1,
+                                    "subTotal": 3559
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 356,
+                                    "tax": 246,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 4,
+                                    "currency": "BDT",
+                                    "paxType": "Infant",
+                                    "paxCount": 1,
+                                    "subTotal": 406
+                                }
+                            }
+                        ],
+                        "price": {
+                            "totalPayable": {
+                                "total": 13067,
+                                "curreny": "BDT"
+                            },
+                            "gross": {
+                                "total": 13817,
+                                "curreny": "BDT"
+                            },
+                            "discount": {
+                                "total": 800,
+                                "curreny": "BDT"
+                            },
+                            "totalVAT": {
+                                "total": 50,
+                                "curreny": "BDT"
+                            },
+                            "additionalMealCharges": null,
+                            "additionalBaggageCharges": null,
+                            "additionalSeatCharges": null
+                        },
+                        "penalty": null,
+                        "baggageAllowanceList": [
+                            {
+                                "baggageAllowance": {
+                                    "departure": "CGP",
+                                    "arrival": "DAC",
+                                    "checkIn": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "10Kg"
+                                        }
+                                    ],
+                                    "cabin": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "7Kg"
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "upSellBrandList": null,
+                        "seatsRemaining": "9",
+                        "source": 6,
+                        "nearByAirport": null
+                    }
+                },
+                {
+                    "offer": {
+                        "twoOnewayIndex": "IB",
+                        "offerId": "901831dc-ac1c-4e40-b9d1-f274557e188b_IB",
+                        "validatingCarrier": "2A",
+                        "refundable": true,
+                        "fareType": "OnHold",
+                        "paxSegmentList": [
+                            {
+                                "paxSegment": {
+                                    "departure": {
+                                        "iatA_LocationCode": "CGP",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-12T21:25:00Z"
+                                    },
+                                    "arrival": {
+                                        "iatA_LocationCode": "DAC",
+                                        "terminalName": "D",
+                                        "aircraftScheduledDateTime": "2026-03-12T22:20:00Z"
+                                    },
+                                    "marketingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "marketingCarrierFlightNumber": "424",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "operatingCarrierInfo": {
+                                        "carrierDesigCode": "2A",
+                                        "carrierName": "AirAstra"
+                                    },
+                                    "iatA_AircraftType": {
+                                        "iatA_AircraftTypeCode": "AT7"
+                                    },
+                                    "rbd": "E",
+                                    "flightNumber": "424",
+                                    "segmentGroup": 0,
+                                    "returnJourney": false,
+                                    "airlinePNR": null,
+                                    "technicalStopOver": null,
+                                    "duration": "55",
+                                    "cabinType": "Economy"
+                                }
+                            }
+                        ],
+                        "fareDetailList": [
+                            {
+                                "fareDetail": {
+                                    "baseFare": 3560,
+                                    "tax": 1175,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 16,
+                                    "currency": "BDT",
+                                    "paxType": "Adult",
+                                    "paxCount": 2,
+                                    "subTotal": 9102
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 2670,
+                                    "tax": 1075,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 14,
+                                    "currency": "BDT",
+                                    "paxType": "Child",
+                                    "paxCount": 1,
+                                    "subTotal": 3559
+                                }
+                            },
+                            {
+                                "fareDetail": {
+                                    "baseFare": 356,
+                                    "tax": 246,
+                                    "otherFee": 0,
+                                    "discount": 200,
+                                    "vat": 4,
+                                    "currency": "BDT",
+                                    "paxType": "Infant",
+                                    "paxCount": 1,
+                                    "subTotal": 406
+                                }
+                            }
+                        ],
+                        "price": {
+                            "totalPayable": {
+                                "total": 13067,
+                                "curreny": "BDT"
+                            },
+                            "gross": {
+                                "total": 13817,
+                                "curreny": "BDT"
+                            },
+                            "discount": {
+                                "total": 800,
+                                "curreny": "BDT"
+                            },
+                            "totalVAT": {
+                                "total": 50,
+                                "curreny": "BDT"
+                            },
+                            "additionalMealCharges": null,
+                            "additionalBaggageCharges": null,
+                            "additionalSeatCharges": null
+                        },
+                        "penalty": null,
+                        "baggageAllowanceList": [
+                            {
+                                "baggageAllowance": {
+                                    "departure": "CGP",
+                                    "arrival": "DAC",
+                                    "checkIn": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "20Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "10Kg"
+                                        }
+                                    ],
+                                    "cabin": [
+                                        {
+                                            "paxType": "Adult",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Child",
+                                            "allowance": "7Kg"
+                                        },
+                                        {
+                                            "paxType": "Infant",
+                                            "allowance": "7Kg"
+                                        }
+                                    ]
+                                }
+                            }
+                        ],
+                        "upSellBrandList": null,
+                        "seatsRemaining": "9",
+                        "source": 6,
+                        "nearByAirport": null
+                    }
+                }
+            ]
+        },
+        "moreOffersAvailableAirline": [],
+        "traceId": "392ad035-58fa-453a-9868-07bf6b129a3c"
+    },
+    "statusCode": "OK",
+    "success": true,
+    "error": null,
+    "info": [
+        "PostmanRuntime/7.51.0"
+    ]
+}

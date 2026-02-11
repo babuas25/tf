@@ -1,0 +1,54 @@
+{
+    "pointOfSale": "BD",
+    "request": {
+      "originDest": [
+        {
+          "originDepRequest": {
+            "iatA_LocationCode": "DAC",
+            "date": "2026-03-08"
+          },
+          "destArrivalRequest": {
+            "iatA_LocationCode": "BKK"
+          }
+        },
+        {
+          "originDepRequest": {
+            "iatA_LocationCode": "BKK",
+            "date": "2026-03-17"
+          },
+          "destArrivalRequest": {
+            "iatA_LocationCode": "DAC"
+          }
+        }
+      ],
+      "pax": [
+        {
+          "paxID": "PAX1",
+          "ptc": "ADT"
+        },
+        {
+          "paxID": "PAX2",
+          "ptc": "ADT"
+        },
+        {
+          "paxID": "PAX3",
+          "ptc": "C05"
+        },
+        {
+          "paxID": "PAX4",
+          "ptc": "INF",
+          "infantRef": "PAX1"
+        }
+      ],
+      "shoppingCriteria": {
+        "tripType": "Return",
+        "travelPreferences": {
+          "vendorPref": [],
+          "cabinCode": "Economy"
+        },
+        "returnUPSellInfo": true,
+        "preferCombine": true
+      }
+    }
+  }
+  

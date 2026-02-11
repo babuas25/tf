@@ -1,0 +1,715 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile viewport fixes */
+@layer base {
+  html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 640px) {
+    html,
+    body {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+      position: relative;
+    }
+
+    #__next {
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+
+    /* Prevent any element from extending beyond viewport */
+    * {
+      max-width: 100% !important;
+    }
+
+    /* Specific fixes for form elements */
+    input,
+    select,
+    textarea,
+    button {
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Base tokens now point to the active theme tokens. Fallbacks keep current look. */
+    --background: var(--theme-background, 0 0% 100%);
+    --foreground: var(--theme-foreground, 222.2 84% 4.9%);
+    --card: var(--theme-card, 0 0% 100%);
+    --card-foreground: var(--theme-card-foreground, 222.2 84% 4.9%);
+    --popover: var(--theme-popover, 0 0% 100%);
+    --popover-foreground: var(--theme-popover-foreground, 222.2 84% 4.9%);
+    --primary: var(--theme-primary, 222.2 47.4% 11.2%);
+    --primary-foreground: var(--theme-primary-foreground, 210 40% 98%);
+    --secondary: var(--theme-secondary, 210 40% 96%);
+    --secondary-foreground: var(--theme-secondary-foreground, 222.2 47.4% 11.2%);
+    --muted: var(--theme-muted, 210 40% 96%);
+    --muted-foreground: var(--theme-muted-foreground, 215.4 16.3% 46.9%);
+    --accent: var(--theme-accent, 210 40% 96%);
+    --accent-foreground: var(--theme-accent-foreground, 222.2 47.4% 11.2%);
+    --destructive: var(--theme-destructive, 0 84.2% 60.2%);
+    --destructive-foreground: var(--theme-destructive-foreground, 210 40% 98%);
+    --border: var(--theme-border, 214.3 31.8% 91.4%);
+    --input: var(--theme-input, 214.3 31.8% 91.4%);
+    --ring: var(--theme-ring, 222.2 84% 4.9%);
+    /* Tripfeels theme variables injected by ThemeProvider */
+    --tf-bg-solid: #ffffff;
+    --tf-bg-contrast: #0f172a; /* Slate-900 default */
+  }
+
+  html {
+    background: hsl(var(--background));
+    overflow-x: hidden;
+  }
+
+  /* Per-theme dark tokens to ensure comfortable contrast in dark mode */
+  .dark {
+    /* Slate (dark) */
+    --slate-background: 222 47% 11%;
+    --slate-foreground: 210 40% 98%;
+    --slate-primary: 217 33% 17%;
+    --slate-primary-foreground: 210 40% 98%;
+    --slate-secondary: 217 25% 20%;
+    --slate-secondary-foreground: 210 40% 98%;
+    --slate-accent: 217 19% 24%;
+    --slate-accent-foreground: 210 40% 98%;
+    --slate-muted: 217 19% 24%;
+    --slate-muted-foreground: 215 20% 72%;
+    --slate-card: 222 47% 12%;
+    --slate-card-foreground: 210 40% 98%;
+    --slate-popover: 222 47% 12%;
+    --slate-popover-foreground: 210 40% 98%;
+    --slate-border: 217 25% 20%;
+    --slate-input: 217 25% 20%;
+    --slate-ring: 217 33% 30%;
+    --slate-bg-from: 217 26% 18%;
+    --slate-bg-via: 217 19% 24%;
+    --slate-bg-to: 222 47% 11%;
+
+    /* Green (dark) */
+    --green-background: 160 30% 8%;
+    --green-foreground: 152 40% 95%;
+    --green-primary: 160 84% 39%;
+    --green-primary-foreground: 210 40% 98%;
+    --green-secondary: 160 25% 14%;
+    --green-secondary-foreground: 152 40% 95%;
+    --green-accent: 152 40% 22%;
+    --green-accent-foreground: 152 40% 95%;
+    --green-muted: 160 20% 16%;
+    --green-muted-foreground: 152 20% 75%;
+    --green-card: 160 30% 10%;
+    --green-card-foreground: 152 40% 95%;
+    --green-popover: 160 30% 10%;
+    --green-popover-foreground: 152 40% 95%;
+    --green-border: 160 20% 18%;
+    --green-input: 160 20% 18%;
+    --green-ring: 160 84% 39%;
+    --green-bg-from: 160 25% 16%;
+    --green-bg-via: 152 40% 22%;
+    --green-bg-to: 160 84% 39%;
+
+    /* Violet (dark) */
+    --violet-background: 262 40% 10%;
+    --violet-foreground: 262 40% 96%;
+    --violet-primary: 262 83% 58%;
+    --violet-primary-foreground: 210 40% 98%;
+    --violet-secondary: 262 32% 16%;
+    --violet-secondary-foreground: 262 40% 96%;
+    --violet-accent: 262 45% 22%;
+    --violet-accent-foreground: 262 40% 96%;
+    --violet-muted: 262 28% 20%;
+    --violet-muted-foreground: 262 16% 75%;
+    --violet-card: 262 40% 12%;
+    --violet-card-foreground: 262 40% 96%;
+    --violet-popover: 262 40% 12%;
+    --violet-popover-foreground: 262 40% 96%;
+    --violet-border: 262 24% 22%;
+    --violet-input: 262 24% 22%;
+    --violet-ring: 262 83% 58%;
+    --violet-bg-from: 262 32% 18%;
+    --violet-bg-via: 262 45% 22%;
+    --violet-bg-to: 262 83% 58%;
+
+    /* Teal (dark) */
+    --teal-background: 173 34% 10%;
+    --teal-foreground: 173 40% 96%;
+    --teal-primary: 173 80% 40%;
+    --teal-primary-foreground: 210 40% 98%;
+    --teal-secondary: 173 28% 16%;
+    --teal-secondary-foreground: 173 40% 96%;
+    --teal-accent: 173 40% 22%;
+    --teal-accent-foreground: 173 40% 96%;
+    --teal-muted: 173 24% 20%;
+    --teal-muted-foreground: 173 18% 75%;
+    --teal-card: 173 34% 12%;
+    --teal-card-foreground: 173 40% 96%;
+    --teal-popover: 173 34% 12%;
+    --teal-popover-foreground: 173 40% 96%;
+    --teal-border: 173 24% 22%;
+    --teal-input: 173 24% 22%;
+    --teal-ring: 173 80% 40%;
+    --teal-bg-from: 173 28% 18%;
+    --teal-bg-via: 173 40% 22%;
+    --teal-bg-to: 173 80% 40%;
+
+    /* Default (dark) */
+    --default-background: var(--slate-background);
+    --default-foreground: var(--slate-foreground);
+    --default-primary: 217 91% 60%;
+    --default-primary-foreground: 210 40% 98%;
+    --default-secondary: var(--slate-secondary);
+    --default-secondary-foreground: var(--slate-secondary-foreground);
+    --default-accent: 217 55% 24%;
+    --default-accent-foreground: 210 40% 98%;
+    --default-muted: var(--slate-muted);
+    --default-muted-foreground: var(--slate-muted-foreground);
+    --default-card: var(--slate-card);
+    --default-card-foreground: var(--slate-card-foreground);
+    --default-popover: var(--slate-popover);
+    --default-popover-foreground: var(--slate-popover-foreground);
+    --default-border: var(--slate-border);
+    --default-input: var(--slate-input);
+    --default-ring: 217 91% 60%;
+    --default-bg-from: var(--slate-bg-from);
+    --default-bg-via: var(--slate-bg-via);
+    --default-bg-to: var(--slate-bg-to);
+
+    /* Blue (dark) */
+    --blue-background: var(--slate-background);
+    --blue-foreground: var(--slate-foreground);
+    --blue-primary: 217 91% 60%;
+    --blue-primary-foreground: 210 40% 98%;
+    --blue-secondary: 217 25% 20%;
+    --blue-secondary-foreground: 210 40% 98%;
+    --blue-accent: 217 55% 24%;
+    --blue-accent-foreground: 210 40% 98%;
+    --blue-muted: 217 19% 24%;
+    --blue-muted-foreground: 217 20% 75%;
+    --blue-card: var(--slate-card);
+    --blue-card-foreground: var(--slate-card-foreground);
+    --blue-popover: var(--slate-popover);
+    --blue-popover-foreground: var(--slate-popover-foreground);
+    --blue-border: 217 24% 22%;
+    --blue-input: 217 24% 22%;
+    --blue-ring: 217 91% 60%;
+    --blue-bg-from: 217 26% 18%;
+    --blue-bg-via: 217 40% 22%;
+    --blue-bg-to: 217 91% 60%;
+
+    /* Red (dark) */
+    --red-background: var(--slate-background);
+    --red-foreground: var(--slate-foreground);
+    --red-primary: 0 84% 60%;
+    --red-primary-foreground: 210 40% 98%;
+    --red-secondary: 0 25% 20%;
+    --red-secondary-foreground: 210 40% 98%;
+    --red-accent: 0 55% 24%;
+    --red-accent-foreground: 210 40% 98%;
+    --red-muted: 0 24% 22%;
+    --red-muted-foreground: 0 20% 75%;
+    --red-card: var(--slate-card);
+    --red-card-foreground: var(--slate-card-foreground);
+    --red-popover: var(--slate-popover);
+    --red-popover-foreground: var(--slate-popover-foreground);
+    --red-border: 0 24% 22%;
+    --red-input: 0 24% 22%;
+    --red-ring: 0 84% 60%;
+    --red-bg-from: 0 26% 18%;
+    --red-bg-via: 0 40% 22%;
+    --red-bg-to: 0 84% 60%;
+
+    /* Yellow (dark) - amber-like for better contrast */
+    --yellow-background: var(--slate-background);
+    --yellow-foreground: var(--slate-foreground);
+    --yellow-primary: 38 92% 50%;
+    --yellow-primary-foreground: 0 0% 10%;
+    --yellow-secondary: 38 25% 20%;
+    --yellow-secondary-foreground: 210 40% 98%;
+    --yellow-accent: 38 45% 24%;
+    --yellow-accent-foreground: 210 40% 98%;
+    --yellow-muted: 38 24% 22%;
+    --yellow-muted-foreground: 38 20% 75%;
+    --yellow-card: var(--slate-card);
+    --yellow-card-foreground: var(--slate-card-foreground);
+    --yellow-popover: var(--slate-popover);
+    --yellow-popover-foreground: var(--slate-popover-foreground);
+    --yellow-border: 38 24% 22%;
+    --yellow-input: 38 24% 22%;
+    --yellow-ring: 38 92% 50%;
+    --yellow-bg-from: 38 26% 18%;
+    --yellow-bg-via: 38 40% 22%;
+    --yellow-bg-to: 38 92% 50%;
+  }
+
+  .dark {
+    /* Dark tokens also route via theme variables (fallbacks preserved) */
+    --background: var(--theme-background, 222.2 84% 4.9%);
+    --foreground: var(--theme-foreground, 210 40% 98%);
+    --card: var(--theme-card, 222.2 84% 4.9%);
+    --card-foreground: var(--theme-card-foreground, 210 40% 98%);
+    --popover: var(--theme-popover, 222.2 84% 4.9%);
+    --popover-foreground: var(--theme-popover-foreground, 210 40% 98%);
+    --primary: var(--theme-primary, 210 40% 98%);
+    --primary-foreground: var(--theme-primary-foreground, 222.2 47.4% 11.2%);
+    --secondary: var(--theme-secondary, 217.2 32.6% 17.5%);
+    --secondary-foreground: var(--theme-secondary-foreground, 210 40% 98%);
+    --muted: var(--theme-muted, 217.2 32.6% 17.5%);
+    --muted-foreground: var(--theme-muted-foreground, 215 20.2% 65.1%);
+    --accent: var(--theme-accent, 217.2 32.6% 17.5%);
+    --accent-foreground: var(--theme-accent-foreground, 210 40% 98%);
+    --destructive: var(--theme-destructive, 0 62.8% 30.6%);
+    --destructive-foreground: var(--theme-destructive-foreground, 210 40% 98%);
+    --border: var(--theme-border, 217.2 32.6% 17.5%);
+    --input: var(--theme-input, 217.2 32.6% 17.5%);
+    --ring: var(--theme-ring, 212.7 26.8% 83.9%);
+  }
+}
+
+/* Placeholder per-theme tokens (values can be centralized later). */
+:root {
+  /* Slate - shadcn/ui compliant colors for WCAG AA contrast */
+  --slate-background: 0 0% 100%;
+  --slate-foreground: 222.2 84% 4.9%;
+  --slate-primary: 222.2 47.4% 11.2%; /* shadcn slate - high contrast */
+  --slate-primary-foreground: 210 40% 98%;
+  --slate-secondary: 210 40% 96.1%;
+  --slate-secondary-foreground: 222.2 47.4% 11.2%;
+  --slate-accent: 210 40% 96.1%;
+  --slate-accent-foreground: 222.2 47.4% 11.2%;
+  --slate-muted: 210 40% 96.1%;
+  --slate-muted-foreground: 215.4 16.3% 46.9%;
+  --slate-card: 0 0% 100%;
+  --slate-card-foreground: 222.2 84% 4.9%;
+  --slate-popover: 0 0% 100%;
+  --slate-popover-foreground: 222.2 84% 4.9%;
+  --slate-border: 214.3 31.8% 91.4%;
+  --slate-input: 214.3 31.8% 91.4%;
+  --slate-ring: 222.2 84% 4.9%;
+  /* gradient for slate */
+  --slate-bg-from: 215 20% 90%;
+  --slate-bg-via: 215 22% 78%;
+  --slate-bg-to: 215 35% 55%;
+
+  /* Default (shadcn style: zinc/neutral) - WCAG AA compliant */
+  --default-background: 0 0% 100%;
+  --default-foreground: 240 10% 3.9%;
+  --default-primary: 240 5.9% 10%; /* shadcn default/zinc - high contrast */
+  --default-primary-foreground: 0 0% 98%;
+  --default-secondary: 240 4.8% 95.9%;
+  --default-secondary-foreground: 240 5.9% 10%;
+  --default-accent: 240 4.8% 95.9%;
+  --default-accent-foreground: 240 5.9% 10%;
+  --default-muted: 240 4.8% 95.9%;
+  --default-muted-foreground: 240 3.8% 46.1%;
+  --default-card: 0 0% 100%;
+  --default-card-foreground: 240 10% 3.9%;
+  --default-popover: 0 0% 100%;
+  --default-popover-foreground: 240 10% 3.9%;
+  --default-border: 240 5.9% 90%;
+  --default-input: 240 5.9% 90%;
+  --default-ring: 240 5.9% 10%;
+  --default-bg-from: var(--slate-bg-from);
+  --default-bg-via: var(--slate-bg-via);
+  --default-bg-to: var(--slate-bg-to);
+
+  /* Green - shadcn/ui compliant colors for WCAG AA contrast */
+  --green-background: 0 0% 100%;
+  --green-foreground: 240 10% 3.9%;
+  --green-primary: 142.1 76.2% 36.3%; /* shadcn green - WCAG AA compliant */
+  --green-primary-foreground: 355.7 100% 97.3%;
+  --green-secondary: 240 4.8% 95.9%;
+  --green-secondary-foreground: 240 5.9% 10%;
+  --green-accent: 240 4.8% 95.9%;
+  --green-accent-foreground: 240 5.9% 10%;
+  --green-muted: 240 4.8% 95.9%;
+  --green-muted-foreground: 240 3.8% 46.1%;
+  --green-card: 0 0% 100%;
+  --green-card-foreground: 240 10% 3.9%;
+  --green-popover: 0 0% 100%;
+  --green-popover-foreground: 240 10% 3.9%;
+  --green-border: 240 5.9% 90%;
+  --green-input: 240 5.9% 90%;
+  --green-ring: 142.1 76.2% 36.3%;
+  --green-bg-from: 152 30% 96%;
+  --green-bg-via: 152 50% 78%;
+  --green-bg-to: 142.1 76.2% 36.3%;
+
+  /* Blue - shadcn/ui compliant colors for WCAG AA contrast */
+  --blue-background: 0 0% 100%;
+  --blue-foreground: 222.2 84% 4.9%;
+  --blue-primary: 221.2 83.2% 53.3%; /* shadcn blue - WCAG AA compliant */
+  --blue-primary-foreground: 210 40% 98%;
+  --blue-secondary: 210 40% 96.1%;
+  --blue-secondary-foreground: 222.2 47.4% 11.2%;
+  --blue-accent: 210 40% 96.1%;
+  --blue-accent-foreground: 222.2 47.4% 11.2%;
+  --blue-muted: 210 40% 96.1%;
+  --blue-muted-foreground: 215.4 16.3% 46.9%;
+  --blue-card: 0 0% 100%;
+  --blue-card-foreground: 222.2 84% 4.9%;
+  --blue-popover: 0 0% 100%;
+  --blue-popover-foreground: 222.2 84% 4.9%;
+  --blue-border: 214.3 31.8% 91.4%;
+  --blue-input: 214.3 31.8% 91.4%;
+  --blue-ring: 221.2 83.2% 53.3%;
+  --blue-bg-from: 217 33% 96%;
+  --blue-bg-via: 217 50% 82%;
+  --blue-bg-to: 221.2 83.2% 53.3%;
+
+  /* Red - shadcn/ui compliant colors for WCAG AA contrast */
+  --red-background: 0 0% 100%;
+  --red-foreground: 240 10% 3.9%;
+  --red-primary: 0 72.2% 50.6%; /* shadcn red - WCAG AA compliant */
+  --red-primary-foreground: 0 85.7% 97.3%;
+  --red-secondary: 240 4.8% 95.9%;
+  --red-secondary-foreground: 240 5.9% 10%;
+  --red-accent: 240 4.8% 95.9%;
+  --red-accent-foreground: 240 5.9% 10%;
+  --red-muted: 240 4.8% 95.9%;
+  --red-muted-foreground: 240 3.8% 46.1%;
+  --red-card: 0 0% 100%;
+  --red-card-foreground: 240 10% 3.9%;
+  --red-popover: 0 0% 100%;
+  --red-popover-foreground: 240 10% 3.9%;
+  --red-border: 240 5.9% 90%;
+  --red-input: 240 5.9% 90%;
+  --red-ring: 0 72.2% 50.6%;
+  --red-bg-from: 0 33% 96%;
+  --red-bg-via: 0 50% 82%;
+  --red-bg-to: 0 72.2% 50.6%;
+
+  /* Violet - shadcn/ui compliant colors for WCAG AA contrast */
+  --violet-background: 0 0% 100%;
+  --violet-foreground: 224 71.4% 4.1%;
+  --violet-primary: 262.1 83.3% 57.8%; /* shadcn violet - WCAG AA compliant */
+  --violet-primary-foreground: 210 20% 98%;
+  --violet-secondary: 220 14.3% 95.9%;
+  --violet-secondary-foreground: 220.9 39.3% 11%;
+  --violet-accent: 220 14.3% 95.9%;
+  --violet-accent-foreground: 220.9 39.3% 11%;
+  --violet-muted: 220 14.3% 95.9%;
+  --violet-muted-foreground: 220 8.9% 46.1%;
+  --violet-card: 0 0% 100%;
+  --violet-card-foreground: 224 71.4% 4.1%;
+  --violet-popover: 0 0% 100%;
+  --violet-popover-foreground: 224 71.4% 4.1%;
+  --violet-border: 220 13% 91%;
+  --violet-input: 220 13% 91%;
+  --violet-ring: 262.1 83.3% 57.8%;
+  --violet-bg-from: 262 32% 96%;
+  --violet-bg-via: 262 60% 82%;
+  --violet-bg-to: 262.1 83.3% 57.8%;
+
+  /* Orange - shadcn/ui compliant colors for WCAG AA contrast */
+  --orange-background: 0 0% 100%;
+  --orange-foreground: 20 14.3% 4.1%;
+  --orange-primary: 24.6 95% 53.1%; /* shadcn orange - WCAG AA compliant */
+  --orange-primary-foreground: 60 9.1% 97.8%;
+  --orange-secondary: 60 4.8% 95.9%;
+  --orange-secondary-foreground: 24 9.8% 10%;
+  --orange-accent: 60 4.8% 95.9%;
+  --orange-accent-foreground: 24 9.8% 10%;
+  --orange-muted: 60 4.8% 95.9%;
+  --orange-muted-foreground: 25 5.3% 44.7%;
+  --orange-card: 0 0% 100%;
+  --orange-card-foreground: 20 14.3% 4.1%;
+  --orange-popover: 0 0% 100%;
+  --orange-popover-foreground: 20 14.3% 4.1%;
+  --orange-border: 20 5.9% 90%;
+  --orange-input: 20 5.9% 90%;
+  --orange-ring: 24.6 95% 53.1%;
+  --orange-bg-from: 24 35% 96%;
+  --orange-bg-via: 24 70% 80%;
+  --orange-bg-to: 24.6 95% 53.1%;
+
+  /* Yellow - shadcn/ui compliant colors for WCAG AA contrast */
+  --yellow-background: 0 0% 100%;
+  --yellow-foreground: 20 14.3% 4.1%;
+  --yellow-primary: 47.9 95.8% 53.1%; /* shadcn yellow - uses dark text for contrast */
+  --yellow-primary-foreground: 26 83.3% 14.1%;
+  --yellow-secondary: 60 4.8% 95.9%;
+  --yellow-secondary-foreground: 24 9.8% 10%;
+  --yellow-accent: 60 4.8% 95.9%;
+  --yellow-accent-foreground: 24 9.8% 10%;
+  --yellow-muted: 60 4.8% 95.9%;
+  --yellow-muted-foreground: 25 5.3% 44.7%;
+  --yellow-card: 0 0% 100%;
+  --yellow-card-foreground: 20 14.3% 4.1%;
+  --yellow-popover: 0 0% 100%;
+  --yellow-popover-foreground: 20 14.3% 4.1%;
+  --yellow-border: 20 5.9% 90%;
+  --yellow-input: 20 5.9% 90%;
+  --yellow-ring: 47.9 95.8% 53.1%;
+  --yellow-bg-from: 38 35% 96%;
+  --yellow-bg-via: 38 60% 82%;
+  --yellow-bg-to: 47.9 95.8% 53.1%;
+
+  /* Teal - WCAG AA compliant - darker for text contrast */
+  --teal-background: 0 0% 100%;
+  --teal-foreground: 240 10% 3.9%;
+  --teal-primary: 173 80% 30%; /* darker teal for WCAG AA compliance */
+  --teal-primary-foreground: 210 40% 98%;
+  --teal-secondary: 240 4.8% 95.9%;
+  --teal-secondary-foreground: 240 5.9% 10%;
+  --teal-accent: 240 4.8% 95.9%;
+  --teal-accent-foreground: 240 5.9% 10%;
+  --teal-muted: 240 4.8% 95.9%;
+  --teal-muted-foreground: 240 3.8% 46.1%;
+  --teal-card: 0 0% 100%;
+  --teal-card-foreground: 240 10% 3.9%;
+  --teal-popover: 0 0% 100%;
+  --teal-popover-foreground: 240 10% 3.9%;
+  --teal-border: 240 5.9% 90%;
+  --teal-input: 240 5.9% 90%;
+  --teal-ring: 173 80% 30%;
+  --teal-bg-from: 173 34% 96%;
+  --teal-bg-via: 173 55% 78%;
+  --teal-bg-to: 173 80% 30%;
+
+  /* Rose - shadcn/ui compliant colors for WCAG AA contrast */
+  --rose-background: 0 0% 100%;
+  --rose-foreground: 240 10% 3.9%;
+  --rose-primary: 346.8 77.2% 49.8%; /* shadcn rose - WCAG AA compliant */
+  --rose-primary-foreground: 355.7 100% 97.3%;
+  --rose-secondary: 240 4.8% 95.9%;
+  --rose-secondary-foreground: 240 5.9% 10%;
+  --rose-accent: 240 4.8% 95.9%;
+  --rose-accent-foreground: 240 5.9% 10%;
+  --rose-muted: 240 4.8% 95.9%;
+  --rose-muted-foreground: 240 3.8% 46.1%;
+  --rose-card: 0 0% 100%;
+  --rose-card-foreground: 240 10% 3.9%;
+  --rose-popover: 0 0% 100%;
+  --rose-popover-foreground: 240 10% 3.9%;
+  --rose-border: 240 5.9% 90%;
+  --rose-input: 240 5.9% 90%;
+  --rose-ring: 346.8 77.2% 49.8%;
+  --rose-bg-from: 346 35% 96%;
+  --rose-bg-via: 346 65% 82%;
+  --rose-bg-to: 346.8 77.2% 49.8%;
+}
+
+/* Logo uses Geist Sans (via Tailwind font-logo / var(--font-geist-sans) from layout) */
+
+/* Basic styling to ensure the page displays properly */
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
+/* Dark mode gradient */
+.dark body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Select dropdown styling for dark mode */
+select {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+
+select option {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+
+/* Checkbox styling for dark mode */
+input[type='checkbox'] {
+  accent-color: hsl(var(--primary));
+}
+
+/* Fix for auto-scroll warning with fixed/sticky positioned elements */
+html {
+  scroll-padding-top: 3.5rem; /* 56px = h-14 for fixed header */
+  scroll-behavior: auto !important; /* Suppress auto-scroll behavior warnings */
+}
+
+/* Force auto scroll behavior for all elements to prevent warnings */
+*,
+*::before,
+*::after {
+  scroll-behavior: auto !important;
+}
+
+/* Specific override for fixed and sticky positioned elements */
+.fixed,
+[style*='position: fixed'],
+[style*='position: sticky'],
+[class*='fixed'],
+[class*='sticky'] {
+  scroll-behavior: auto !important;
+}
+
+/* Override any smooth scrolling that might trigger warnings */
+html[style*='scroll-behavior'],
+body[style*='scroll-behavior'] {
+  scroll-behavior: auto !important;
+}
+
+/* Blob animation for glassmorphism background */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Animated gradient background utility */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 18s ease-in-out infinite;
+}
+
+/* Reusable glassmorphism and theme utilities */
+@layer utilities {
+  /* Cards and panels */
+  .glass-card {
+    @apply bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20 shadow-lg rounded-xl;
+  }
+  .glass-panel {
+    @apply bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20 rounded-xl;
+  }
+  .glass-surface {
+    @apply bg-white/15 dark:bg-white/10 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl;
+  }
+  .glass-border {
+    @apply border-white/30 dark:border-white/20;
+  }
+
+  /* Inputs */
+  .glass-input {
+    @apply h-10 bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-lg;
+  }
+
+  /* Tabs container */
+  .glass-tabs {
+    @apply bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 rounded-lg;
+  }
+
+  /* Reusable green gradient wrapper */
+  .green-gradient-bg {
+    @apply min-h-screen bg-gradient-to-br from-green-50 via-green-100 to-green-800 dark:from-green-900 dark:via-green-800 dark:to-green-950 animated-gradient;
+  }
+
+  /* Thin scrollbar for horizontal scroll areas */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(75, 85, 99, 0.5);
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(75, 85, 99, 0.8);
+  }
+}

@@ -1,0 +1,179 @@
+{
+    "message": "",
+    "requestedOn": "2026-01-02T05:29:00.283174Z",
+    "respondedOn": "2026-01-02T05:29:09.043182Z",
+    "response": {
+        "offersGroup": [
+            {
+                "offer": {
+                    "twoOnewayIndex": null,
+                    "offerId": "eecd6c3b-6e49-43c5-bd43-53d92fd4c25f",
+                    "validatingCarrier": "BG",
+                    "refundable": true,
+                    "fareType": "OnHold",
+                    "paxSegmentList": [
+                        {
+                            "paxSegment": {
+                                "departure": {
+                                    "iatA_LocationCode": "DAC",
+                                    "terminalName": "2",
+                                    "aircraftScheduledDateTime": "2026-03-26T02:50:00Z"
+                                },
+                                "arrival": {
+                                    "iatA_LocationCode": "YYZ",
+                                    "terminalName": "3",
+                                    "aircraftScheduledDateTime": "2026-03-26T13:40:00Z"
+                                },
+                                "marketingCarrierInfo": {
+                                    "carrierDesigCode": "BG",
+                                    "marketingCarrierFlightNumber": "305",
+                                    "carrierName": "Biman Bangladesh Airlines"
+                                },
+                                "operatingCarrierInfo": {
+                                    "carrierDesigCode": "BG",
+                                    "carrierName": "Biman Bangladesh Airlines"
+                                },
+                                "iatA_AircraftType": {
+                                    "iatA_AircraftTypeCode": "789"
+                                },
+                                "rbd": "K",
+                                "flightNumber": "305",
+                                "segmentGroup": 0,
+                                "returnJourney": false,
+                                "airlinePNR": null,
+                                "technicalStopOver": [
+                                    {
+                                        "iatA_LocationCode": "IST",
+                                        "aircraftScheduledArrivalDateTime": "2026-03-26T08:45:00Z",
+                                        "aircraftScheduledDepartureDateTime": "2026-03-26T09:55:00Z",
+                                        "arrivalTerminalName": null,
+                                        "departureTerminalName": null
+                                    }
+                                ],
+                                "duration": "1250",
+                                "cabinType": "Economy"
+                            }
+                        }
+                    ],
+                    "fareDetailList": [
+                        {
+                            "fareDetail": {
+                                "baseFare": 89344,
+                                "tax": 14014,
+                                "otherFee": 0,
+                                "discount": 3494,
+                                "vat": 341,
+                                "currency": "BDT",
+                                "paxType": "Adult",
+                                "paxCount": 2,
+                                "subTotal": 200410
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 80631,
+                                "tax": 11014,
+                                "otherFee": 0,
+                                "discount": 3148,
+                                "vat": 303,
+                                "currency": "BDT",
+                                "paxType": "Child",
+                                "paxCount": 1,
+                                "subTotal": 88800
+                            }
+                        },
+                        {
+                            "fareDetail": {
+                                "baseFare": 23561,
+                                "tax": 2825,
+                                "otherFee": 0,
+                                "discount": 882,
+                                "vat": 84,
+                                "currency": "BDT",
+                                "paxType": "Infant",
+                                "paxCount": 1,
+                                "subTotal": 25588
+                            }
+                        }
+                    ],
+                    "price": {
+                        "totalPayable": {
+                            "total": 314798,
+                            "curreny": "BDT"
+                        },
+                        "gross": {
+                            "total": 324747,
+                            "curreny": "BDT"
+                        },
+                        "discount": {
+                            "total": 11018,
+                            "curreny": "BDT"
+                        },
+                        "totalVAT": {
+                            "total": 1069,
+                            "curreny": "BDT"
+                        },
+                        "additionalMealCharges": null,
+                        "additionalBaggageCharges": null,
+                        "additionalSeatCharges": null
+                    },
+                    "penalty": null,
+                    "baggageAllowanceList": [
+                        {
+                            "baggageAllowance": {
+                                "departure": "DAC",
+                                "arrival": "YYZ",
+                                "checkIn": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "2P"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "1P"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "2P"
+                                    }
+                                ],
+                                "cabin": [
+                                    {
+                                        "paxType": "Adult",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Infant",
+                                        "allowance": "SB"
+                                    },
+                                    {
+                                        "paxType": "Child",
+                                        "allowance": "SB"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "upSellBrandList": null,
+                    "seatsRemaining": "9",
+                    "source": 7,
+                    "nearByAirport": null
+                }
+            }
+        ],
+        "specialReturn": false,
+        "specialReturnOffersGroup": null,
+        "moreOffersAvailableAirline": [
+            "EK",
+            "AC",
+            "QR"
+        ],
+        "traceId": "629c3ea7-e641-47df-ba05-956856838f2d"
+    },
+    "statusCode": "OK",
+    "success": true,
+    "error": null,
+    "info": [
+        "PostmanRuntime/7.51.0"
+    ]
+}

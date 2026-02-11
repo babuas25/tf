@@ -1,0 +1,43 @@
+{
+  "pointOfSale": "BD",
+  "request": {
+    "originDest": [
+      {
+        "originDepRequest": {
+          "iatA_LocationCode": "DAC",
+          "date": "2026-03-26"
+        },
+        "destArrivalRequest": {
+          "iatA_LocationCode": "YYZ"
+        }
+      }
+    ],
+    "pax": [
+      {
+        "paxID": "PAX1",
+        "ptc": "ADT"
+      },
+      {
+        "paxID": "PAX2",
+        "ptc": "ADT"
+      },
+      {
+        "paxID": "PAX3",
+        "ptc": "C04"
+      },
+      {
+        "paxID": "PAX4",
+        "ptc": "INF"
+      }
+    ],
+    "shoppingCriteria": {
+      "tripType": "Oneway",
+      "travelPreferences": {
+        "vendorPref": [],
+        "cabinCode": "Economy"
+      },
+      "returnUPSellInfo": true,
+      "preferCombine": true
+    }
+  }
+}

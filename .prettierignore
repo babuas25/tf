@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+dist
+coverage
+public/*
+.eslintrc.*
+eslint.config.*
+.next/**/*
+**/*.config.{js,cjs,mjs,ts}
+next-env.d.ts

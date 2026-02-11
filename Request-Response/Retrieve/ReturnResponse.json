@@ -1,0 +1,346 @@
+{
+    "message": null,
+    "requestedOn": "2026-01-28T06:48:04.5466412Z",
+    "respondedOn": "2026-01-28T06:48:04.9813621Z",
+    "response": {
+        "orderReference": "BDF2509735255",
+        "paymentTimeLimit": null,
+        "orderItem": [
+            {
+                "validatingCarrier": "TG",
+                "refundable": false,
+                "fareType": "OnHold",
+                "paxSegmentList": [
+                    {
+                        "paxSegment": {
+                            "departure": {
+                                "iatA_LocationCode": "DAC",
+                                "terminalName": "2",
+                                "aircraftScheduledDateTime": "2025-09-28T13:35:00"
+                            },
+                            "arrival": {
+                                "iatA_LocationCode": "BKK",
+                                "terminalName": null,
+                                "aircraftScheduledDateTime": "2025-09-28T17:00:00"
+                            },
+                            "marketingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "marketingCarrierFlightNumber": "322",
+                                "carrierName": "THAI Airways"
+                            },
+                            "operatingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "carrierName": "THAI Airways"
+                            },
+                            "iatA_AircraftType": {
+                                "iatA_AircraftTypeCode": "320"
+                            },
+                            "rbd": "W",
+                            "flightNumber": "322",
+                            "segmentGroup": 0,
+                            "returnJourney": false,
+                            "airlinePNR": "F9AUGJ",
+                            "technicalStopOver": null,
+                            "duration": "145",
+                            "cabinType": "Economy"
+                        }
+                    },
+                    {
+                        "paxSegment": {
+                            "departure": {
+                                "iatA_LocationCode": "BKK",
+                                "terminalName": null,
+                                "aircraftScheduledDateTime": "2025-09-28T19:00:00"
+                            },
+                            "arrival": {
+                                "iatA_LocationCode": "KHI",
+                                "terminalName": "M",
+                                "aircraftScheduledDateTime": "2025-09-28T22:00:00"
+                            },
+                            "marketingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "marketingCarrierFlightNumber": "341",
+                                "carrierName": "THAI Airways"
+                            },
+                            "operatingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "carrierName": "THAI Airways"
+                            },
+                            "iatA_AircraftType": {
+                                "iatA_AircraftTypeCode": "333"
+                            },
+                            "rbd": "W",
+                            "flightNumber": "341",
+                            "segmentGroup": 0,
+                            "returnJourney": false,
+                            "airlinePNR": "F9AUGJ",
+                            "technicalStopOver": null,
+                            "duration": "300",
+                            "cabinType": "Economy"
+                        }
+                    },
+                    {
+                        "paxSegment": {
+                            "departure": {
+                                "iatA_LocationCode": "KHI",
+                                "terminalName": "M",
+                                "aircraftScheduledDateTime": "2025-10-30T23:35:00"
+                            },
+                            "arrival": {
+                                "iatA_LocationCode": "BKK",
+                                "terminalName": null,
+                                "aircraftScheduledDateTime": "2025-10-31T06:10:00"
+                            },
+                            "marketingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "marketingCarrierFlightNumber": "342",
+                                "carrierName": "THAI Airways"
+                            },
+                            "operatingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "carrierName": "THAI Airways"
+                            },
+                            "iatA_AircraftType": {
+                                "iatA_AircraftTypeCode": "772"
+                            },
+                            "rbd": "W",
+                            "flightNumber": "342",
+                            "segmentGroup": 1,
+                            "returnJourney": true,
+                            "airlinePNR": "F9AUGJ",
+                            "technicalStopOver": null,
+                            "duration": "275",
+                            "cabinType": "Economy"
+                        }
+                    },
+                    {
+                        "paxSegment": {
+                            "departure": {
+                                "iatA_LocationCode": "BKK",
+                                "terminalName": null,
+                                "aircraftScheduledDateTime": "2025-10-31T10:55:00"
+                            },
+                            "arrival": {
+                                "iatA_LocationCode": "DAC",
+                                "terminalName": "2",
+                                "aircraftScheduledDateTime": "2025-10-31T12:30:00"
+                            },
+                            "marketingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "marketingCarrierFlightNumber": "321",
+                                "carrierName": "THAI Airways"
+                            },
+                            "operatingCarrierInfo": {
+                                "carrierDesigCode": "TG",
+                                "carrierName": "THAI Airways"
+                            },
+                            "iatA_AircraftType": {
+                                "iatA_AircraftTypeCode": "333"
+                            },
+                            "rbd": "W",
+                            "flightNumber": "321",
+                            "segmentGroup": 1,
+                            "returnJourney": true,
+                            "airlinePNR": "F9AUGJ",
+                            "technicalStopOver": null,
+                            "duration": "155",
+                            "cabinType": "Economy"
+                        }
+                    }
+                ],
+                "fareDetailList": [
+                    {
+                        "fareDetail": {
+                            "baseFare": 103496,
+                            "tax": 14257,
+                            "otherFee": 0,
+                            "discount": 7762,
+                            "vat": 354,
+                            "currency": "BDT",
+                            "paxType": "Adult",
+                            "paxCount": 1,
+                            "subTotal": 110345
+                        }
+                    }
+                ],
+                "price": {
+                    "totalPayable": {
+                        "total": 110345,
+                        "curreny": "BDT"
+                    },
+                    "gross": {
+                        "total": 117753,
+                        "curreny": "BDT"
+                    },
+                    "discount": {
+                        "total": 7762,
+                        "curreny": "BDT"
+                    },
+                    "totalVAT": {
+                        "total": 354,
+                        "curreny": "BDT"
+                    }
+                },
+                "penalty": {
+                    "refundPenaltyList": [
+                        {
+                            "refundPenalty": {
+                                "departure": "DAC",
+                                "arrival": "KHI",
+                                "penaltyInfoList": [
+                                    {
+                                        "penaltyInfo": {
+                                            "type": "Before Departure",
+                                            "textInfoList": [
+                                                {
+                                                    "textInfo": {
+                                                        "paxType": "Adult",
+                                                        "info": [
+                                                            "Non Refundable"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "penaltyInfo": {
+                                            "type": "After Departure",
+                                            "textInfoList": [
+                                                {
+                                                    "textInfo": {
+                                                        "paxType": "Adult",
+                                                        "info": [
+                                                            "Non Refundable"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "exchangePenaltyList": [
+                        {
+                            "exchangePenalty": {
+                                "departure": "DAC",
+                                "arrival": "KHI",
+                                "penaltyInfoList": [
+                                    {
+                                        "penaltyInfo": {
+                                            "type": "Before Departure",
+                                            "textInfoList": [
+                                                {
+                                                    "textInfo": {
+                                                        "paxType": "Adult",
+                                                        "info": [
+                                                            "BDT 18622"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "penaltyInfo": {
+                                            "type": "After Departure",
+                                            "textInfoList": [
+                                                {
+                                                    "textInfo": {
+                                                        "paxType": "Adult",
+                                                        "info": [
+                                                            "BDT 18622"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "baggageAllowanceList": [
+                    {
+                        "baggageAllowance": {
+                            "departure": "DAC",
+                            "arrival": "KHI",
+                            "checkIn": [
+                                {
+                                    "paxType": "Adult",
+                                    "allowance": "23kg"
+                                }
+                            ],
+                            "cabin": [
+                                {
+                                    "paxType": "Adult",
+                                    "allowance": "SB"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "baggageAllowance": {
+                            "departure": "KHI",
+                            "arrival": "DAC",
+                            "checkIn": [
+                                {
+                                    "paxType": "Adult",
+                                    "allowance": "23kg"
+                                }
+                            ],
+                            "cabin": [
+                                {
+                                    "paxType": "Adult",
+                                    "allowance": "SB"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ],
+        "paxList": [
+            {
+                "ptc": "Adult",
+                "individual": {
+                    "title": "Mr",
+                    "givenName": "MD ZAFAR",
+                    "surname": "ALI",
+                    "gender": "Male",
+                    "birthdate": "1954-01-01T00:00:00",
+                    "nationality": "Bangladesh",
+                    "identityDoc": {
+                        "identityDocType": "Passport",
+                        "identityDocID": "A12653844",
+                        "issuingCountryCode": "BD",
+                        "expiryDate": "2033-11-19T00:00:00"
+                    },
+                    "associatePax": null,
+                    "ticketDocument": [
+                        {
+                            "ticketDocNbr": "2175073995504"
+                        }
+                    ]
+                },
+                "orderSSR": null
+            }
+        ],
+        "contactDetail": {
+            "phoneNumber": "880-1911135562",
+            "emailAddress": "tripfeelsbd@gmail.com"
+        },
+        "orderStatus": "Confirmed",
+        "orderChangeInfo": null,
+        "partialPaymentInfo": null,
+        "exchangeDetails": null,
+        "traceId": "894e8962-d274-4f3d-b2f4-2ac9ce3b7dc8"
+    },
+    "statusCode": "OK",
+    "success": true,
+    "error": null,
+    "info": null
+}

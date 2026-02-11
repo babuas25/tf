@@ -1,0 +1,23 @@
+CREATE TABLE "travellers" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"ptc" varchar(10) DEFAULT 'Adult',
+	"given_name" varchar(100) NOT NULL,
+	"surname" varchar(100) NOT NULL,
+	"gender" varchar(10) DEFAULT 'Other',
+	"birthdate" date,
+	"nationality" varchar(3),
+	"phone_number" varchar(20) NOT NULL,
+	"country_dialing_code" varchar(5),
+	"email_address" varchar(255),
+	"document_type" varchar(50),
+	"document_id" varchar(100),
+	"document_expiry_date" date,
+	"ssr_codes" jsonb DEFAULT '[]'::jsonb,
+	"ssr_remarks" jsonb DEFAULT '{}'::jsonb,
+	"loyalty_airline_code" varchar(10),
+	"loyalty_account_number" varchar(50),
+	"created_by" varchar(50) NOT NULL,
+	"created_by_user_id" varchar(255) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);

@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for authentication checking
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is SuperAdmin
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.role == 'SuperAdmin' || 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin');
+    }
+    
+    // Function to validate user data structure for creation
+    function validUserData() {
+      let required = ['uid', 'email', 'role', 'profile', 'metadata'];
+      return request.resource.data.keys().hasAll(required) &&
+             request.resource.data.role in ['SuperAdmin', 'Admin', 'Staff', 'Partner', 'Agent', 'User'] &&
+             request.resource.data.profile.keys().hasAll(['firstName', 'lastName', 'gender', 'dateOfBirth', 'mobile']) &&
+             request.resource.data.metadata.keys().hasAll(['createdAt', 'lastLoginAt', 'isActive', 'emailVerified']);
+    }
+    
+    // Function to check if user is only updating allowed profile fields
+    function onlyUpdatingAllowedFields() {
+      let allowedFields = ['profile.firstName', 'profile.lastName', 'profile.mobile', 'profile.avatar', 'metadata.lastLoginAt'];
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(allowedFields);
+    }
+    
+    // Function to check if updating sensitive fields (requires admin privileges)
+    function updatingSensitiveFields() {
+      let sensitiveFields = ['role', 'permissions', 'assignedBy', 'metadata.isActive', 'metadata.emailVerified'];
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(sensitiveFields);
+    }
+    
+    // Users collection - comprehensive access control
+    match /users/{userId} {
+      // Read access: Allow authenticated users (authorization handled by API)
+      allow read: if isAuthenticated();
+      
+      // Create access: Allow user creation during registration
+      // - User can create their own document (userId matches auth.uid)
+      // - Must have valid user data structure
+      allow create: if (isAuthenticated() && request.auth.uid == userId && validUserData()) ||
+                     (isAuthenticated() && validUserData());
+      
+      // Update access: Allow authenticated users
+      // - Non-sensitive field updates (profile updates)
+      // - Sensitive field updates (handled by API authorization)
+      allow update: if isAuthenticated() && 
+                   (onlyUpdatingAllowedFields() || 
+                    (updatingSensitiveFields() && isSuperAdmin()));
+      
+      // Delete access: Allow authenticated users (API handles SuperAdmin check)
+      allow delete: if isAuthenticated();
+    }
+    
+    // Database test collection - for database initialization testing
+    match /_database_test/{document} {
+      allow read, write, create, delete: if isAuthenticated();
+    }
+    
+    // Database initialization collection - for seeding operations
+    match /_database_init/{document} {
+      allow read, write, create, delete: if isAuthenticated();
+    }
+    
+    // System logs - controlled access
+    match /logs/{document} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Logs are immutable
+    }
+    
+    // Settings collection - admin operations
+    match /settings/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); // API handles admin authorization
+    }
+    
+    // Analytics collection - read access for reporting
+    match /analytics/{document} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Analytics are append-only
+    }
+    
+    // User sessions - for NextAuth session management
+    match /sessions/{document} {
+      allow read, write, create, delete: if isAuthenticated();
+    }
+    
+    // User verification tokens - for email verification
+    match /verification_tokens/{document} {
+      allow read, write, create, delete: if isAuthenticated();
+    }
+    
+    // Password reset tokens
+    match /password_resets/{document} {
+      allow read, write, create, delete: if isAuthenticated();
+    }
+    
+    // Audit trail - for security and compliance
+    match /audit/{document} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Audit logs are immutable
+    }
+    
+    // User preferences and settings
+    match /user_preferences/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Theme preferences collection - SuperAdmin only
+    match /themePreferences/{document} {
+      allow read, write, create, delete: if isSuperAdmin();
+    }
+
+    // Auth slideshow images - public read, SuperAdmin write
+    match /auth_slides/{document} {
+      // Anyone (even not logged in) can read to display slideshow on /auth
+      allow read: if true;
+      // Only SuperAdmin can create/update/delete slides
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // Notifications
+    match /notifications/{document} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // System configuration - for application settings
+    match /system_config/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); // API handles admin authorization
+    }
+    
+    // Global Theme (public read, SuperAdmin write)
+    match /themes/{themeId} {
+      // Anyone can read the active theme (use isAuthenticated() instead if you prefer)
+      allow read: if true;
+
+      // Only SuperAdmin can create/update/delete and only allowed fields
+      allow create, update, delete: if isSuperAdmin() && validThemeWrite();
+
+      function validThemeWrite() {
+        // Allowed fields
+        let allowed = ['bgStyle', 'solidColor', 'gradientFrom', 'gradientVia', 'gradientTo', 'colorTheme', 'updatedAt', 'updatedBy'];
+        // Enforce allowed keys and basic type checks
+        return request.resource.data.keys().hasOnly(allowed)
+          && (request.resource.data.bgStyle in ['solid', 'gradient', 'animated'])
+          && (request.resource.data.colorTheme is string)
+          && (request.resource.data.solidColor is string)
+          && (request.resource.data.gradientFrom is string)
+          && (request.resource.data.gradientVia is string)
+          && (request.resource.data.gradientTo is string);
+      }
+    }
+    
+    // Default deny rule for undefined collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
