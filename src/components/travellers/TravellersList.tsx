@@ -9,13 +9,12 @@ import {
   Phone,
   Mail,
   Calendar,
-  MapPin,
   FileText,
   Award,
   RefreshCw,
   ChevronDown,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,6 +60,113 @@ interface TravellersListProps {
   setEditingTraveller?: (traveller: Traveller | null) => void
 }
 
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+
+const parseDisplayDate = (value: string | undefined | null): Date | null => {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const dateOnlyMatch = DATE_ONLY_PATTERN.exec(trimmed)
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1])
+    const month = Number(dateOnlyMatch[2])
+    const day = Number(dateOnlyMatch[3])
+    if (!year || !month || !day) return null
+    return new Date(year, month - 1, day)
+  }
+
+  const parsed = new Date(trimmed)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed
+}
+
+const formatDate = (value: string | undefined | null): string => {
+  const parsed = parseDisplayDate(value)
+  if (!parsed) return '--'
+
+  const day = parsed.getDate()
+  const month = parsed.toLocaleString('en-US', { month: 'short' }).toUpperCase()
+  const year = parsed.getFullYear()
+  return `${day} ${month} ${year}`
+}
+
+const formatDateTime = (value: string | undefined | null): string => {
+  const parsed = parseDisplayDate(value)
+  if (!parsed) return '--'
+
+  const date = formatDate(value)
+  const time = parsed.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${date} ${time}`
+}
+
+const safeText = (value: string | undefined | null, fallback: string = '--'): string => {
+  if (!value) return fallback
+  const trimmed = value.trim()
+  return trimmed || fallback
+}
+
+const getRoleDescription = (role: string) => {
+  switch (role) {
+    case 'SuperAdmin':
+      return 'Manage all travellers in the system. You can view, add, edit, and delete any traveller.'
+    case 'Admin':
+      return 'Manage all travellers in the system. You can view, add, and edit any traveller.'
+    case 'Staff':
+    case 'Agent':
+    case 'Partner':
+    case 'User':
+      return 'Manage your travellers. You can view, add, and edit only travellers you created.'
+    default:
+      return 'Manage travellers.'
+  }
+}
+
+const getPtcBadgeClass = (ptc: string) => {
+  switch (ptc) {
+    case 'Adult':
+      return 'bg-primary/10 text-primary border-primary/40'
+    case 'Child':
+      return 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/40'
+    case 'Infant':
+      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/40'
+    default:
+      return 'bg-white/20 text-foreground border-white/30'
+  }
+}
+
+function TravellerSkeletonRows() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }, (_, idx) => (
+        <Card
+          key={idx}
+          className="bg-white/30 dark:bg-white/5 border border-white/30 dark:border-white/15 shadow-sm"
+        >
+          <CardContent className="p-4">
+            <div className="animate-pulse space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="h-5 w-44 rounded bg-gray-300/70 dark:bg-gray-600/50" />
+                <div className="h-8 w-28 rounded bg-gray-300/70 dark:bg-gray-600/50" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+                <div className="h-10 rounded bg-gray-300/60 dark:bg-gray-600/40" />
+                <div className="h-10 rounded bg-gray-300/60 dark:bg-gray-600/40" />
+                <div className="h-10 rounded bg-gray-300/60 dark:bg-gray-600/40" />
+                <div className="h-10 rounded bg-gray-300/60 dark:bg-gray-600/40" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export function TravellersList({
   travellers,
   role,
@@ -80,82 +186,75 @@ export function TravellersList({
   const [nationalityFilter, setNationalityFilter] = useState('All')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
+  const nationalityOptions = useMemo(() => {
+    const all = Array.from(new Set(travellers.map((t) => safeText(t.nationality, '')).filter(Boolean)))
+      .sort()
+      .map((code) => ({ value: code, label: code }))
+    return [{ value: 'All', label: 'All Countries' }, ...all]
+  }, [travellers])
+
+  const filteredTravellers = useMemo(
+    () =>
+      travellers.filter((traveller) => {
+        const fullName = `${traveller.givenName} ${traveller.surname}`.toLowerCase()
+        const q = search.trim().toLowerCase()
+        const matchesSearch =
+          !q ||
+          fullName.includes(q) ||
+          safeText(traveller.emailAddress, '').toLowerCase().includes(q) ||
+          safeText(traveller.documentId, '').toLowerCase().includes(q)
+
+        const matchesPtc = ptcFilter === 'All' || traveller.ptc === ptcFilter
+        const matchesNationality =
+          nationalityFilter === 'All' || safeText(traveller.nationality, '') === nationalityFilter
+
+        return matchesSearch && matchesPtc && matchesNationality
+      }),
+    [travellers, search, ptcFilter, nationalityFilter],
+  )
+
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const filteredTravellers = travellers.filter((traveller) => {
-    const matchesSearch =
-      traveller.givenName.toLowerCase().includes(search.toLowerCase()) ||
-      traveller.surname.toLowerCase().includes(search.toLowerCase()) ||
-      traveller.emailAddress.toLowerCase().includes(search.toLowerCase()) ||
-      traveller.documentId.toLowerCase().includes(search.toLowerCase())
-
-    const matchesPtc = ptcFilter === 'All' || traveller.ptc === ptcFilter
-    const matchesNationality =
-      nationalityFilter === 'All' || traveller.nationality === nationalityFilter
-
-    return matchesSearch && matchesPtc && matchesNationality
-  })
-
-  const getRoleDescription = () => {
-    switch (role) {
-      case 'SuperAdmin':
-        return 'Manage all travellers in the system. You can view, add, edit, and delete any traveller.'
-      case 'Admin':
-        return 'Manage all travellers in the system. You can view, add, and edit any traveller.'
-      case 'Staff':
-      case 'Agent':
-      case 'Partner':
-      case 'User':
-        return 'Manage your travellers. You can view, add, and edit only the travellers you have created.'
-      default:
-        return 'Manage travellers.'
-    }
-  }
-
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Travellers Management
-          </h1>
-          <button
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors duration-200 disabled:opacity-50"
-            title="Refresh travellers data"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+    <div className="px-2 md:px-3 pt-2 space-y-3">
+      <div className="rounded-xl border border-white/30 dark:border-white/20 bg-white/20 dark:bg-white/10 backdrop-blur-md shadow-sm p-4">
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Travellers Management</h1>
+              <button
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors duration-200 disabled:opacity-50"
+                title="Refresh travellers data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{getRoleDescription(role)}</p>
+          </div>
+
+          <Button onClick={onAddTraveller} className="h-10 px-4 flex items-center gap-2 self-start">
+            <Plus className="h-4 w-4" />
+            Add Traveller
+          </Button>
         </div>
-        <Button
-          onClick={onAddTraveller}
-          variant="default"
-          className="px-4 py-2 flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Traveller
-        </Button>
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400">{getRoleDescription()}</p>
-
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search by name, email, or document ID"
-            className="pl-10 h-9 w-full rounded-lg border border-[hsl(var(--primary))]/60 bg-primary/10 backdrop-blur-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="w-full sm:w-32">
+      <div className="rounded-xl border border-white/30 dark:border-white/20 bg-white/20 dark:bg-white/10 backdrop-blur-md shadow-sm p-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_170px_190px] gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search by name, email, or document ID"
+              className="pl-9 h-10 w-full bg-white/40 dark:bg-white/5 border-white/40 dark:border-white/20"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <SimpleDropdown
             id="ptc-filter"
             value={ptcFilter}
@@ -165,232 +264,192 @@ export function TravellersList({
               { value: 'Child', label: 'Child' },
               { value: 'Infant', label: 'Infant' },
             ]}
-            onChange={(value) => setPtcFilter(value)}
+            onChange={setPtcFilter}
           />
-        </div>
-        <div className="w-full sm:w-32">
           <SimpleDropdown
             id="nationality-filter"
             value={nationalityFilter}
-            options={[
-              { value: 'All', label: 'All Countries' },
-              { value: 'BD', label: 'Bangladesh' },
-              { value: 'US', label: 'United States' },
-              { value: 'CA', label: 'Canada' },
-              { value: 'UK', label: 'United Kingdom' },
-            ]}
-            onChange={(value) => setNationalityFilter(value)}
+            options={nationalityOptions}
+            onChange={setNationalityFilter}
           />
         </div>
+        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+          Showing {filteredTravellers.length} of {travellers.length} travellers
+        </p>
       </div>
 
-      {/* Travellers List */}
-      <div className="grid gap-4">
-        {filteredTravellers.length === 0 ? (
-          <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-            <CardContent className="p-8 lg:p-6 text-center">
-              <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                No travellers found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {search || ptcFilter !== 'All' || nationalityFilter !== 'All'
-                  ? 'Try adjusting your search or filters'
-                  : 'Get started by adding your first traveller'}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredTravellers.map((traveller) => (
-            <Card
-              key={traveller.id}
-              className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20 hover:bg-white/30 dark:hover:bg-white/20 transition-colors duration-200 p-4"
-            >
-              <CardContent className="p-5">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  {/* Traveller Info */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-primary/15 rounded-full flex items-center justify-center">
-                        <User className="h-3 w-3 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          {traveller.givenName} {traveller.surname}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] bg-primary/10 text-primary border border-[hsl(var(--primary))]/40 px-1 py-0"
-                          >
-                            {traveller.ptc}
-                          </Badge>
-                          <span>•</span>
-                          <span>{traveller.gender}</span>
-                          <span>•</span>
-                          <span>{traveller.nationality}</span>
+      {isLoading && travellers.length === 0 ? (
+        <TravellerSkeletonRows />
+      ) : filteredTravellers.length === 0 ? (
+        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
+          <CardContent className="p-8 text-center">
+            <User className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No travellers found</h3>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {search || ptcFilter !== 'All' || nationalityFilter !== 'All'
+                ? 'Try adjusting your search or filters'
+                : 'Get started by adding your first traveller'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredTravellers.map((traveller) => {
+            const fullName = `${traveller.givenName} ${traveller.surname}`.trim()
+            const createdAt = formatDateTime(traveller.createdAt)
+            const modifiedAt = formatDateTime(traveller.lastModified)
+
+            return (
+              <Card
+                key={traveller.id}
+                className="bg-white/30 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/15 shadow-sm hover:shadow-md hover:bg-white/40 dark:hover:bg-white/10 transition-all duration-200"
+              >
+                <CardContent className="p-3">
+                  <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-3">
+                    <div className="min-w-0 flex-1 space-y-2.5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {fullName || '--'}
+                          </h3>
+                          <div className="mt-0.5 flex items-center flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <Badge
+                              variant="outline"
+                              className={`text-[11px] px-2 py-0 ${getPtcBadgeClass(traveller.ptc)}`}
+                            >
+                              {safeText(traveller.ptc, 'N/A')}
+                            </Badge>
+                            <span>{safeText(traveller.gender)}</span>
+                            <span className="text-gray-400">|</span>
+                            <span>{safeText(traveller.nationality)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Calendar className="h-3 w-3 text-primary/80" />
-                        <span className="lg:truncate lg:whitespace-nowrap">
-                          {traveller.birthdate}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Phone className="h-3 w-3 text-primary/80" />
-                        <span className="lg:truncate lg:whitespace-nowrap">
-                          +{traveller.countryDialingCode} {traveller.phoneNumber}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 lg:gap-1 text-gray-600 dark:text-gray-400 leading-none lg:whitespace-nowrap">
-                        <Mail className="h-3 w-3 text-primary/80" />
-                        <span className="lg:truncate lg:whitespace-nowrap">
-                          {traveller.emailAddress}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 lg:gap-1 text-gray-600 dark:text-gray-400 leading-none lg:whitespace-nowrap">
-                        <FileText className="h-3 w-3 text-primary/80" />
-                        <span className="lg:truncate lg:whitespace-nowrap">
-                          {traveller.documentType}: {traveller.documentId}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 lg:gap-1 text-gray-600 dark:text-gray-400 leading-none lg:whitespace-nowrap">
-                        <MapPin className="h-3 w-3 text-primary/80" />
-                        <span className="lg:truncate lg:whitespace-nowrap">
-                          {traveller.documentExpiryDate}
-                        </span>
-                      </div>
-                      {traveller.loyaltyAirlineCode && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <Award className="h-3 w-3" />
-                          <span>
-                            {traveller.loyaltyAirlineCode} - {traveller.loyaltyAccountNumber}
-                          </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/40 dark:bg-white/5 px-2.5 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Date of Birth</p>
+                          <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
+                            <Calendar className="h-3.5 w-3.5 text-primary/80" />
+                            {formatDate(traveller.birthdate)}
+                          </p>
                         </div>
-                      )}
-                    </div>
-
-                    {/* SSR Codes (hidden on lg for compactness) */}
-                    {traveller.ssrCodes.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {traveller.ssrCodes.map((code) => (
-                          <Badge key={code} variant="outline" className="text-xs">
-                            {code}
-                            {traveller.ssrRemarks[code] && `: ${traveller.ssrRemarks[code]}`}
-                          </Badge>
-                        ))}
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/40 dark:bg-white/5 px-2.5 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Phone</p>
+                          <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
+                            <Phone className="h-3.5 w-3.5 text-primary/80" />+{safeText(traveller.countryDialingCode, '--')}{' '}
+                            {safeText(traveller.phoneNumber)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/40 dark:bg-white/5 px-2.5 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Email</p>
+                          <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
+                            <Mail className="h-3.5 w-3.5 text-primary/80" />
+                            {safeText(traveller.emailAddress)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/40 dark:bg-white/5 px-2.5 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            {safeText(traveller.documentType, 'Document')}
+                          </p>
+                          <p className="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5 truncate">
+                            <FileText className="h-3.5 w-3.5 text-primary/80" />
+                            {safeText(traveller.documentId)}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                            Expires: {formatDate(traveller.documentExpiryDate)}
+                          </p>
+                        </div>
                       </div>
-                    )}
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Created by {traveller.createdBy} on {traveller.createdAt}
-                      {traveller.lastModified !== traveller.createdAt && (
-                        <span> • Last modified: {traveller.lastModified}</span>
-                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Created by {safeText(traveller.createdBy)} on {createdAt}
+                        {modifiedAt !== createdAt && <span> | Last modified: {modifiedAt}</span>}
+                      </p>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEditTraveller(traveller.id)}
-                      className="flex items-center gap-1 border border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10 h-8 px-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </Button>
-                    {canDelete && onDeleteTraveller && (
+                    <div className="flex flex-wrap gap-2 2xl:flex-col 2xl:items-stretch 2xl:w-[128px]">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onDeleteTraveller(traveller.id)}
-                        className="flex items-center gap-1 border border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10 h-8 px-2"
+                        onClick={() => onEditTraveller(traveller.id)}
+                        className="h-8 border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10"
                       >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Delete</span>
+                        <Edit className="h-3.5 w-3.5 mr-1" />
+                        Edit
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleExpanded(traveller.id)}
-                      title={expanded[traveller.id] ? 'View less details' : 'View more details'}
-                      className="flex items-center gap-1 border border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10 h-8 px-2"
-                    >
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${expanded[traveller.id] ? 'rotate-180' : ''}`}
-                      />
-                      <span className="text-xs">
-                        {expanded[traveller.id] ? 'View Less' : 'View More'}
-                      </span>
-                    </Button>
-                  </div>
-                </div>
 
-                {expanded[traveller.id] && (
-                  <div className="mt-4 border-t border-white/20 pt-4 space-y-3">
-                    {/* Detailed grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                      <div className="space-y-1 text-gray-700 dark:text-gray-300">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">Contact</div>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-primary/80" />
-                          <span>
-                            +{traveller.countryDialingCode} {traveller.phoneNumber}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-primary/80" />
-                          <span>{traveller.emailAddress}</span>
-                        </div>
+                      {canDelete && onDeleteTraveller && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onDeleteTraveller(traveller.id)}
+                          className="h-8 border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          Delete
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleExpanded(traveller.id)}
+                        className="h-8 border-[hsl(var(--primary))]/60 text-primary hover:bg-primary/10"
+                      >
+                        <ChevronDown
+                          className={`h-3.5 w-3.5 mr-1 transition-transform ${expanded[traveller.id] ? 'rotate-180' : ''}`}
+                        />
+                        {expanded[traveller.id] ? 'Less' : 'Details'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {expanded[traveller.id] && (
+                    <div className="mt-3 pt-3 border-t border-white/30 dark:border-white/15 grid grid-cols-1 lg:grid-cols-3 gap-3 text-sm">
+                      <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/30 dark:bg-white/5 p-3">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Contact</p>
+                        <p className="text-gray-700 dark:text-gray-300">Phone: +{safeText(traveller.countryDialingCode, '--')} {safeText(traveller.phoneNumber)}</p>
+                        <p className="text-gray-700 dark:text-gray-300">Email: {safeText(traveller.emailAddress)}</p>
                       </div>
-                      <div className="space-y-1 text-gray-700 dark:text-gray-300">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">Identity</div>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary/80" />
-                          <span>
-                            {traveller.documentType}: {traveller.documentId}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-primary/80" />
-                          <span>Expires: {traveller.documentExpiryDate}</span>
-                        </div>
+
+                      <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/30 dark:bg-white/5 p-3">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Identity</p>
+                        <p className="text-gray-700 dark:text-gray-300">
+                          {safeText(traveller.documentType)}: {safeText(traveller.documentId)}
+                        </p>
+                        <p className="text-gray-700 dark:text-gray-300">
+                          Expiry: {formatDate(traveller.documentExpiryDate)}
+                        </p>
                       </div>
-                      <div className="space-y-1 text-gray-700 dark:text-gray-300">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">Personal</div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-primary/80" />
-                          <span>Born: {traveller.birthdate}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary/80" />
-                          <span>Nationality: {traveller.nationality}</span>
-                        </div>
+
+                      <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/30 dark:bg-white/5 p-3">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Personal</p>
+                        <p className="text-gray-700 dark:text-gray-300">DOB: {formatDate(traveller.birthdate)}</p>
+                        <p className="text-gray-700 dark:text-gray-300">
+                          Nationality: {safeText(traveller.nationality)}
+                        </p>
                       </div>
+
                       {traveller.loyaltyAirlineCode && (
-                        <div className="space-y-1 text-gray-700 dark:text-gray-300">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/30 dark:bg-white/5 p-3 lg:col-span-3">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-1.5">
+                            <Award className="h-4 w-4 text-primary/80" />
                             Loyalty
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Award className="h-4 w-4" />
-                            <span>
-                              {traveller.loyaltyAirlineCode} - {traveller.loyaltyAccountNumber}
-                            </span>
-                          </div>
+                          </p>
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {safeText(traveller.loyaltyAirlineCode)} - {safeText(traveller.loyaltyAccountNumber)}
+                          </p>
                         </div>
                       )}
+
                       {traveller.ssrCodes.length > 0 && (
-                        <div className="space-y-1 text-gray-700 dark:text-gray-300 md:col-span-2 lg:col-span-3">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">SSR</div>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="rounded-lg border border-white/30 dark:border-white/15 bg-white/30 dark:bg-white/5 p-3 lg:col-span-3">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">SSR</p>
+                          <div className="flex flex-wrap gap-1.5">
                             {traveller.ssrCodes.map((code) => (
                               <Badge key={code} variant="outline" className="text-xs">
                                 {code}
@@ -401,20 +460,13 @@ export function TravellersList({
                         </div>
                       )}
                     </div>
-
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Created by {traveller.createdBy} on {traveller.createdAt}
-                      {traveller.lastModified !== traveller.createdAt && (
-                        <span> • Last modified: {traveller.lastModified}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

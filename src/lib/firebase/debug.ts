@@ -144,10 +144,10 @@ export class FirebaseDebugger {
     }
   }
 
-  public async diagnose(): Promise<void> {
+  public diagnose(): void {
     console.log('🔧 Firebase Diagnostics Starting...')
 
-    const debugInfo = await this.getDebugInfo()
+    const debugInfo = this.getDebugInfo()
 
     console.group('🔧 Firebase Configuration')
     console.log('Project ID:', debugInfo.firebase.config.projectId)
@@ -287,13 +287,13 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
 }
 
 // Helper function to run diagnostics manually
-export async function runFirebaseDiagnostics() {
-  return await firebaseDebugger.diagnose()
+export function runFirebaseDiagnostics(): void {
+  firebaseDebugger.diagnose()
 }
 
 // Helper function to get debug info
-export async function getFirebaseDebugInfo() {
-  return await firebaseDebugger.getDebugInfo()
+export function getFirebaseDebugInfo(): FirebaseDebugInfo {
+  return firebaseDebugger.getDebugInfo()
 }
 
 // Helper function to test connection

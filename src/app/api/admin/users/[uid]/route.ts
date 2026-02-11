@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { z } from 'zod'
 
 import { authOptions } from '@/lib/auth/nextauth'
+import { cache, cacheKeys, invalidateUsersCache } from '@/lib/cache'
 import { serverEnv } from '@/lib/env.server'
 import { adminDb } from '@/lib/firebase/admin'
 
@@ -86,6 +87,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ uid: s
     }
 
     await adminDb.collection('users').doc(uid).update(updates)
+    invalidateUsersCache()
+    cache.delete(cacheKeys.dashboardStats())
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Error updating user:', err)
@@ -150,6 +153,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ uid:
 
     // Delete the user
     await adminDb.collection('users').doc(uid).delete()
+    invalidateUsersCache()
+    cache.delete(cacheKeys.dashboardStats())
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Error deleting user:', err)

@@ -146,6 +146,7 @@ export default function BookingOrderPage() {
   const [reshopResponse, setReshopResponse] = useState<OrderCreateApiResponse | null>(null)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const successPopupShownRef = useRef(false)
+  const bookingSyncRef = useRef<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
 
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -266,6 +267,29 @@ export default function BookingOrderPage() {
       void loadOrder()
     }
   }, [orderRef]) // Only depend on orderRef to prevent infinite loops
+
+  // Ensure booking history record exists even if the create-page save was interrupted.
+  useEffect(() => {
+    if (!orderRef || !order) return
+    if (bookingSyncRef.current === orderRef) return
+    bookingSyncRef.current = orderRef
+
+    const payload = {
+      orderResponse: {
+        response: order,
+        respondedOn: new Date().toISOString(),
+      },
+      createdBy: session?.user?.email || 'Guest',
+    }
+
+    fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch((err) => {
+      console.warn('Booking sync from booking-order failed:', err)
+    })
+  }, [orderRef, order, session?.user?.email])
 
   // Show success popup + confetti when arriving from review-book after OrderCreate
   useEffect(() => {

@@ -155,6 +155,21 @@ export const withCache = async <T>(
   return data
 }
 
+export const invalidateCacheByPrefix = (prefix: string): number => {
+  let removed = 0
+  const keys = cache.getStats().keys
+  keys.forEach((key) => {
+    if (key.startsWith(prefix) && cache.delete(key)) {
+      removed++
+    }
+  })
+  return removed
+}
+
+export const invalidateUsersCache = (): number => {
+  return invalidateCacheByPrefix('users:') + invalidateCacheByPrefix('user:')
+}
+
 // Cleanup expired items every 5 minutes
 if (typeof window === 'undefined') {
   setInterval(

@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { X, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -108,6 +108,10 @@ export function TravellerForm({
 }: TravellerFormProps) {
   const [newSSRCode, setNewSSRCode] = useState('')
   const [newSSRRemark, setNewSSRRemark] = useState('')
+  const [showSSRSection, setShowSSRSection] = useState((initialData?.ssrCodes?.length ?? 0) > 0)
+  const [showLoyaltySection, setShowLoyaltySection] = useState(
+    Boolean(initialData?.loyaltyAirlineCode || initialData?.loyaltyAccountNumber),
+  )
 
   const form = useForm<TravellerFormData>({
     resolver: zodResolver(travellerFormSchema),
@@ -166,21 +170,27 @@ export function TravellerForm({
     onSubmit(data)
   }
 
+  const currentSsrCodes = form.watch('ssrCodes') || []
+  const loyaltyAirlineCode = form.watch('loyaltyAirlineCode')
+  const loyaltyAccountNumber = form.watch('loyaltyAccountNumber')
+
   return (
     <Form {...form}>
       <form
         onSubmit={(e) => {
           void form.handleSubmit(handleSubmit)(e)
         }}
-        className="space-y-6"
+        className="space-y-4"
       >
         {/* Personal Information */}
-        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">Personal Information</CardTitle>
+        <Card className="bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/40 dark:border-white/15 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+              Personal Information
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               <FormField
                 control={form.control}
                 name="ptc"
@@ -291,12 +301,14 @@ export function TravellerForm({
         </Card>
 
         {/* Contact Information */}
-        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">Contact Information</CardTitle>
+        <Card className="bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/40 dark:border-white/15 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+              Contact Information
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardContent className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="countryDialingCode"
@@ -360,12 +372,14 @@ export function TravellerForm({
         </Card>
 
         {/* Identity Document */}
-        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">Identity Document</CardTitle>
+        <Card className="bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/40 dark:border-white/15 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+              Identity Document
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               <FormField
                 control={form.control}
                 name="documentType"
@@ -424,19 +438,46 @@ export function TravellerForm({
         </Card>
 
         {/* Special Service Requests (SSR) */}
-        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">
-              Special Service Requests (SSR)
-            </CardTitle>
+        <Card className="bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/40 dark:border-white/15 shadow-sm">
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base text-gray-900 dark:text-gray-100">
+                  Special Service Requests (SSR)
+                </CardTitle>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Optional. Add only when airline special services are required.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSSRSection((prev) => !prev)}
+                className="border-primary/50 text-primary hover:bg-primary/10"
+              >
+                {showSSRSection ? (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                    Add SSR
+                  </>
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          {showSSRSection && (
+            <CardContent className="space-y-3 pt-0">
             {/* Existing SSR Codes */}
-            {form.watch('ssrCodes') && form.watch('ssrCodes')!.length > 0 && (
+            {currentSsrCodes.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-gray-900 dark:text-gray-100">Current SSR Codes</Label>
                 <div className="flex flex-wrap gap-2">
-                  {form.watch('ssrCodes')!.map((ssr) => (
+                  {currentSsrCodes.map((ssr) => (
                     <Badge key={ssr.code} variant="outline" className="flex items-center gap-1">
                       {ssr.code}
                       {ssr.remark && `: ${ssr.remark}`}
@@ -480,7 +521,7 @@ export function TravellerForm({
                     type="button"
                     onClick={handleAddSSRCode}
                     disabled={!newSSRCode}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add SSR
@@ -488,57 +529,100 @@ export function TravellerForm({
                 </div>
               </div>
             </div>
-          </CardContent>
+            </CardContent>
+          )}
+          {!showSSRSection && currentSsrCodes.length > 0 && (
+            <CardContent className="pt-0">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {currentSsrCodes.length} SSR code{currentSsrCodes.length > 1 ? 's' : ''} added.
+              </p>
+            </CardContent>
+          )}
         </Card>
 
         {/* Loyalty Program */}
-        <Card className="bg-white/20 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/20">
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-gray-100">Loyalty Program</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="loyaltyAirlineCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-900 dark:text-gray-100">Airline Code</FormLabel>
-                    <FormControl>
-                      <SimpleDropdown
-                        id="loyaltyAirlineCode"
-                        value={field.value || ''}
-                        options={AIRLINE_CODES}
-                        onChange={field.onChange}
-                        placeholder="Select Airline"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+        <Card className="bg-white/70 dark:bg-white/5 backdrop-blur-sm border border-white/40 dark:border-white/15 shadow-sm">
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base text-gray-900 dark:text-gray-100">Loyalty Program</CardTitle>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Optional. Add frequent flyer details if available.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLoyaltySection((prev) => !prev)}
+                className="border-primary/50 text-primary hover:bg-primary/10"
+              >
+                {showLoyaltySection ? (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                    Add Loyalty
+                  </>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="loyaltyAccountNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-900 dark:text-gray-100">
-                      Loyalty Account Number
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="text"
-                        className="bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 text-gray-900 dark:text-gray-100"
-                        placeholder="1234567"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              </Button>
             </div>
-          </CardContent>
+          </CardHeader>
+          {showLoyaltySection && (
+            <CardContent className="space-y-2 pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <FormField
+                  control={form.control}
+                  name="loyaltyAirlineCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-900 dark:text-gray-100">Airline Code</FormLabel>
+                      <FormControl>
+                        <SimpleDropdown
+                          id="loyaltyAirlineCode"
+                          value={field.value || ''}
+                          options={AIRLINE_CODES}
+                          onChange={field.onChange}
+                          placeholder="Select Airline"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="loyaltyAccountNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-900 dark:text-gray-100">
+                        Loyalty Account Number
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="text"
+                          className="bg-white/20 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/20 text-gray-900 dark:text-gray-100"
+                          placeholder="1234567"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          )}
+          {!showLoyaltySection && (loyaltyAirlineCode || loyaltyAccountNumber) && (
+            <CardContent className="pt-0">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Loyalty details saved for {loyaltyAirlineCode || 'selected airline'}.
+              </p>
+            </CardContent>
+          )}
         </Card>
 
         {/* Form Actions */}
@@ -548,7 +632,7 @@ export function TravellerForm({
           </Button>
           <Button
             type="submit"
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isEditing ? 'Update Traveller' : 'Add Traveller'}
           </Button>

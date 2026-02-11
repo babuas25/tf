@@ -17,6 +17,7 @@ declare module 'next-auth' {
       name: string
       image?: string
       role: string
+      isActive: boolean
     }
   }
 }
@@ -24,6 +25,8 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     role: string
+    isActive?: boolean
+    statusCheckedAt?: number
   }
 }
 
@@ -60,6 +63,10 @@ export const authOptions = {
           const userData = await getUser(user.uid)
 
           if (userData) {
+            if (userData.metadata?.isActive === false) {
+              throw new Error('ACCOUNT_INACTIVE')
+            }
+
             // Update last login timestamp for credentials login
             try {
               const updateTime = new Date()
@@ -76,6 +83,7 @@ export const authOptions = {
               name: `${userData.profile.firstName} ${userData.profile.lastName}`,
               image: userData.profile.avatar ?? null,
               role: userData.role,
+              isActive: true,
             }
           }
 
@@ -89,24 +97,30 @@ export const authOptions = {
   ],
 
   callbacks: {
-    signIn({
+    async signIn({
       user,
       account,
     }: {
-      user?: { email?: string | null } | null
+      user?: { id?: string; email?: string | null } | null
       account?: { provider?: string } | null
     }) {
       if (!user || !user.email) return false
 
       try {
-        // For social logins, always allow sign in and handle user creation in jwt callback
-        if (account?.provider === 'google' || account?.provider === 'facebook') {
+        // Credentials checks happen in authorize()
+        if (account?.provider === 'credentials') {
           return true
         }
 
-        // For credentials provider, user should already exist
-        if (account?.provider === 'credentials') {
-          return true
+        // For social login, block inactive existing users
+        if ((account?.provider === 'google' || account?.provider === 'facebook') && user.id) {
+          const userDoc = await adminDb.collection('users').doc(String(user.id)).get()
+          if (userDoc.exists) {
+            const userData = userDoc.data() as Partial<UserDocument>
+            if (userData.metadata?.isActive === false) {
+              return '/auth?error=inactive'
+            }
+          }
         }
 
         return true
@@ -128,12 +142,15 @@ export const authOptions = {
         name?: string | null
         image?: string | null
         role?: string
+        isActive?: boolean
       } | null
       account?: { provider?: string } | null
     }) {
       // Set role from user object for credentials login
       if (user && account?.provider === 'credentials') {
         token.role = user.role ?? 'User'
+        token.isActive = user.isActive !== false
+        token.statusCheckedAt = Date.now()
         return token
       }
 
@@ -142,6 +159,8 @@ export const authOptions = {
         try {
           if (!user.id) {
             token.role = isSuperAdminEmail(user.email || '') ? 'SuperAdmin' : 'User'
+            token.isActive = true
+            token.statusCheckedAt = Date.now()
             return token
           }
           const userId = String(user.id)
@@ -150,12 +169,19 @@ export const authOptions = {
 
           if (userDoc.exists) {
             const userData = userDoc.data() as Partial<UserDocument>
+            token.role = userData?.role || 'User'
+            token.isActive = userData?.metadata?.isActive !== false
+            token.statusCheckedAt = Date.now()
+
+            if (token.isActive === false) {
+              return token
+            }
+
             // Update last login time for existing user
             const updateTime = new Date()
             await adminDb.collection('users').doc(userId).update({
               'metadata.lastLoginAt': updateTime,
             })
-            token.role = userData?.role || 'User'
           } else {
             // Create new user in Firestore using Admin SDK
             const role = isSuperAdminEmail(user.email || '') ? 'SuperAdmin' : 'User'
@@ -186,23 +212,55 @@ export const authOptions = {
 
             await adminDb.collection('users').doc(user.id).set(userData)
             token.role = role
+            token.isActive = true
+            token.statusCheckedAt = Date.now()
           }
         } catch (error) {
           console.error('Error handling social login:', error)
           // Fallback to default role
           token.role = isSuperAdminEmail(user.email || '') ? 'SuperAdmin' : 'User'
+          token.isActive = true
+          token.statusCheckedAt = Date.now()
         }
         return token
       }
 
-      // For existing tokens, preserve the role
-      if (!user && token.role) {
+      if (!user && token.sub) {
+        const now = Date.now()
+        const lastChecked =
+          typeof token.statusCheckedAt === 'number' ? token.statusCheckedAt : 0
+
+        if (now - lastChecked > 30_000 || typeof token.isActive !== 'boolean') {
+          try {
+            const userDoc = await adminDb.collection('users').doc(String(token.sub)).get()
+            if (userDoc.exists) {
+              const userData = userDoc.data() as Partial<UserDocument>
+              token.role = userData?.role || token.role || 'User'
+              token.isActive = userData?.metadata?.isActive !== false
+            } else {
+              token.isActive = false
+            }
+          } catch (error) {
+            console.error('Error refreshing user status:', error)
+          } finally {
+            token.statusCheckedAt = now
+          }
+        }
+
+        if (!token.role) token.role = 'User'
+        if (typeof token.isActive !== 'boolean') token.isActive = true
         return token
       }
 
       // Default fallback
       if (!token.role) {
         token.role = 'User'
+      }
+      if (typeof token.isActive !== 'boolean') {
+        token.isActive = true
+      }
+      if (typeof token.statusCheckedAt !== 'number') {
+        token.statusCheckedAt = Date.now()
       }
 
       return token
@@ -218,6 +276,7 @@ export const authOptions = {
           name: token.name || '',
           image: token.picture || '',
           role: token.role,
+          isActive: token.isActive !== false,
         }
       }
       return session

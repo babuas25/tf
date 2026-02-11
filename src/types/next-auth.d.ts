@@ -6,6 +6,7 @@ declare module 'next-auth' {
       name: string
       image?: string
       role: string
+      isActive: boolean
     }
   }
 
@@ -15,11 +16,14 @@ declare module 'next-auth' {
     name: string
     image?: string
     role: string
+    isActive?: boolean
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     role: string
+    isActive?: boolean
+    statusCheckedAt?: number
   }
 }

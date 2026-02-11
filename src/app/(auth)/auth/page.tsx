@@ -47,6 +47,27 @@ export default function AuthPage() {
   const { data: session } = useSession()
   const callbackUrl = searchParams.get('callbackUrl')
 
+  // If user is already logged in and somehow lands on /auth,
+  // automatically redirect them to their role-based dashboard.
+  useEffect(() => {
+    if (!session?.user) return
+
+    const role = (session.user as { role?: RoleType } | undefined)?.role
+    if (!role) return
+
+    const dashboardRoute = DASHBOARD_ROUTES[role]
+    if (dashboardRoute) {
+      router.replace(dashboardRoute)
+    }
+  }, [session, router])
+
+  useEffect(() => {
+    const authError = searchParams.get('error')
+    if (authError === 'inactive') {
+      setError('Your account is inactive. Please contact an administrator.')
+    }
+  }, [searchParams])
+
   // Connection monitoring
   useEffect(() => {
     const unsubscribe = connectionMonitor.onConnectionChange((online) => {
@@ -136,7 +157,11 @@ export default function AuthPage() {
         }
       } else {
         console.error('Sign in failed:', result?.error)
-        setError('Invalid email or password. Please try again.')
+        if (result?.error?.includes('ACCOUNT_INACTIVE')) {
+          setError('Your account is inactive. Please contact an administrator.')
+        } else {
+          setError('Invalid email or password. Please try again.')
+        }
       }
     } catch (error: unknown) {
       console.error('Sign in error:', error)

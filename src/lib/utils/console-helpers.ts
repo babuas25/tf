@@ -3,6 +3,44 @@
  * Use these functions in the browser console to debug and fix issues
  */
 
+type UserSummary = {
+  email: string
+  role: string
+  category: string
+  firstName: string
+  lastName: string
+  isSuperAdminEmail: boolean
+  isActive: boolean
+}
+
+type FixedUser = {
+  uid: string
+  email: string
+  oldRole: string
+  newRole: string
+}
+
+type ApiIssues = {
+  missingRoles: UserSummary[]
+  inactiveUsers: UserSummary[]
+}
+
+type FixSuperAdminApiResponse = {
+  success: boolean
+  error?: string | undefined
+  message?: string | undefined
+  users?: UserSummary[] | undefined
+  fixedUsers?: FixedUser[] | undefined
+  issues?: ApiIssues | undefined
+  totalUsers?: number | undefined
+  currentSuperAdmins?: number | undefined
+  shouldBeSuperAdmins?: number | undefined
+  superAdminEmails?: string[] | undefined
+  environment?: string | undefined
+  serverEnvSet?: boolean | undefined
+  clientEnvSet?: boolean | undefined
+}
+
 // Make functions available globally in development
 declare global {
   interface Window {
@@ -10,7 +48,110 @@ declare global {
     checkUserRoles: () => Promise<void>
     fixSpecificUser: (email: string) => Promise<void>
     debugFirebase: () => Promise<void>
+    runFirebaseTests?: () => Promise<unknown>
+    showConsoleHelpers?: () => void
   }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const readString = (record: Record<string, unknown>, key: string): string | undefined => {
+  const value = record[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+const readBoolean = (record: Record<string, unknown>, key: string): boolean | undefined => {
+  const value = record[key]
+  return typeof value === 'boolean' ? value : undefined
+}
+
+const readNumber = (record: Record<string, unknown>, key: string): number | undefined => {
+  const value = record[key]
+  return typeof value === 'number' ? value : undefined
+}
+
+const readArray = (record: Record<string, unknown>, key: string): unknown[] => {
+  const value = record[key]
+  return Array.isArray(value) ? value : []
+}
+
+const parseUserSummary = (value: unknown): UserSummary | null => {
+  if (!isRecord(value)) return null
+
+  return {
+    email: readString(value, 'email') ?? '',
+    role: readString(value, 'role') ?? '',
+    category: readString(value, 'category') ?? '',
+    firstName: readString(value, 'firstName') ?? '',
+    lastName: readString(value, 'lastName') ?? '',
+    isSuperAdminEmail: readBoolean(value, 'isSuperAdminEmail') ?? false,
+    isActive: readBoolean(value, 'isActive') ?? true,
+  }
+}
+
+const parseFixedUser = (value: unknown): FixedUser | null => {
+  if (!isRecord(value)) return null
+
+  return {
+    uid: readString(value, 'uid') ?? '',
+    email: readString(value, 'email') ?? '',
+    oldRole: readString(value, 'oldRole') ?? '',
+    newRole: readString(value, 'newRole') ?? '',
+  }
+}
+
+const parseIssues = (value: unknown): ApiIssues | undefined => {
+  if (!isRecord(value)) return undefined
+
+  const missingRoles = readArray(value, 'missingRoles')
+    .map(parseUserSummary)
+    .filter((item): item is UserSummary => item !== null)
+  const inactiveUsers = readArray(value, 'inactiveUsers')
+    .map(parseUserSummary)
+    .filter((item): item is UserSummary => item !== null)
+
+  return {
+    missingRoles,
+    inactiveUsers,
+  }
+}
+
+const parseFixApiResponse = (value: unknown): FixSuperAdminApiResponse => {
+  if (!isRecord(value)) {
+    return { success: false, message: 'Invalid API response' }
+  }
+
+  const users = readArray(value, 'users')
+    .map(parseUserSummary)
+    .filter((item): item is UserSummary => item !== null)
+  const fixedUsers = readArray(value, 'fixedUsers')
+    .map(parseFixedUser)
+    .filter((item): item is FixedUser => item !== null)
+  const superAdminEmails = readArray(value, 'superAdminEmails').filter(
+    (item): item is string => typeof item === 'string',
+  )
+
+  return {
+    success: readBoolean(value, 'success') ?? false,
+    error: readString(value, 'error'),
+    message: readString(value, 'message'),
+    users: users.length > 0 ? users : undefined,
+    fixedUsers: fixedUsers.length > 0 ? fixedUsers : undefined,
+    issues: parseIssues(value.issues),
+    totalUsers: readNumber(value, 'totalUsers'),
+    currentSuperAdmins: readNumber(value, 'currentSuperAdmins'),
+    shouldBeSuperAdmins: readNumber(value, 'shouldBeSuperAdmins'),
+    superAdminEmails: superAdminEmails.length > 0 ? superAdminEmails : undefined,
+    environment: readString(value, 'environment'),
+    serverEnvSet: readBoolean(value, 'serverEnvSet'),
+    clientEnvSet: readBoolean(value, 'clientEnvSet'),
+  }
+}
+
+const parseResponse = async (response: Response): Promise<FixSuperAdminApiResponse> => {
+  const payload: unknown = await response.json().catch(() => ({}))
+  return parseFixApiResponse(payload)
 }
 
 /**
@@ -22,31 +163,31 @@ export async function fixSuperAdmins() {
     return
   }
 
-  console.log('🔧 Fixing SuperAdmin roles...')
+  console.log('Fixing SuperAdmin roles...')
 
   try {
     const response = await fetch('/api/fix-superadmin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'fix-all-superadmins' })
+      body: JSON.stringify({ action: 'fix-all-superadmins' }),
     })
 
-    const result = await response.json()
+    const result = await parseResponse(response)
 
     if (result.success) {
-      console.log('✅ SuperAdmin roles fixed successfully!')
-      console.log('📊 Results:', result)
+      console.log('SuperAdmin roles fixed successfully!')
+      console.log('Results:', result)
 
-      if (result.fixedUsers?.length > 0) {
+      if ((result.fixedUsers?.length ?? 0) > 0) {
         console.table(result.fixedUsers)
       } else {
-        console.log('ℹ️ No users needed role fixes')
+        console.log('No users needed role fixes')
       }
     } else {
-      console.error('❌ Failed to fix SuperAdmin roles:', result.error || result.message)
+      console.error('Failed to fix SuperAdmin roles:', result.error || result.message)
     }
   } catch (error) {
-    console.error('❌ Error calling fix-superadmin API:', error)
+    console.error('Error calling fix-superadmin API:', error)
   }
 }
 
@@ -59,44 +200,50 @@ export async function checkUserRoles() {
     return
   }
 
-  console.log('🔍 Checking user roles and configuration...')
+  console.log('Checking user roles and configuration...')
 
   try {
     const response = await fetch('/api/fix-superadmin')
-    const result = await response.json()
+    const result = await parseResponse(response)
 
     if (result.success) {
-      console.log('📋 Current Status:')
+      console.log('Current Status:')
       console.log('- Total Users:', result.totalUsers)
       console.log('- Current SuperAdmins:', result.currentSuperAdmins)
       console.log('- Should be SuperAdmins:', result.shouldBeSuperAdmins)
       console.log('- SuperAdmin Emails Configured:', result.superAdminEmails)
 
-      if (result.issues?.missingRoles?.length > 0) {
-        console.log('⚠️ Users who should be SuperAdmins but aren\'t:')
-        console.table(result.issues.missingRoles.map((u: any) => ({
-          email: u.email,
-          currentRole: u.role,
-          name: `${u.firstName} ${u.lastName}`.trim()
-        })))
+      const missingRoles = result.issues?.missingRoles ?? []
+      if (missingRoles.length > 0) {
+        console.log("Users who should be SuperAdmins but aren't:")
+        console.table(
+          missingRoles.map((user) => ({
+            email: user.email,
+            currentRole: user.role,
+            name: `${user.firstName} ${user.lastName}`.trim(),
+          })),
+        )
       }
 
-      if (result.users?.length > 0) {
-        console.log('👥 All Users:')
-        console.table(result.users.map((u: any) => ({
-          email: u.email,
-          role: u.role,
-          category: u.category,
-          name: `${u.firstName} ${u.lastName}`.trim(),
-          shouldBeSuperAdmin: u.isSuperAdminEmail,
-          isActive: u.isActive
-        })))
+      const allUsers = result.users ?? []
+      if (allUsers.length > 0) {
+        console.log('All Users:')
+        console.table(
+          allUsers.map((user) => ({
+            email: user.email,
+            role: user.role,
+            category: user.category,
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            shouldBeSuperAdmin: user.isSuperAdminEmail,
+            isActive: user.isActive,
+          })),
+        )
       }
     } else {
-      console.error('❌ Failed to check user roles:', result.error)
+      console.error('Failed to check user roles:', result.error || result.message)
     }
   } catch (error) {
-    console.error('❌ Error checking user roles:', error)
+    console.error('Error checking user roles:', error)
   }
 }
 
@@ -110,12 +257,13 @@ export async function fixSpecificUser(email: string) {
   }
 
   if (!email) {
-    console.error('❌ Please provide an email address')
+    console.error('Please provide an email address')
     console.log('Usage: fixSpecificUser("user@example.com")')
     return
   }
 
-  console.log(`🔧 Fixing role for user: ${email}`)
+  const normalizedEmail = email.toLowerCase().trim()
+  console.log(`Fixing role for user: ${normalizedEmail}`)
 
   try {
     const response = await fetch('/api/fix-superadmin', {
@@ -123,20 +271,20 @@ export async function fixSpecificUser(email: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'fix-specific-user',
-        email: email.toLowerCase().trim()
-      })
+        email: normalizedEmail,
+      }),
     })
 
-    const result = await response.json()
+    const result = await parseResponse(response)
 
     if (result.success) {
-      console.log('✅ User role fixed successfully!')
-      console.log('📊 Result:', result)
+      console.log('User role fixed successfully!')
+      console.log('Result:', result)
     } else {
-      console.error('❌ Failed to fix user role:', result.error || result.message)
+      console.error('Failed to fix user role:', result.error || result.message)
     }
   } catch (error) {
-    console.error('❌ Error fixing user role:', error)
+    console.error('Error fixing user role:', error)
   }
 }
 
@@ -149,36 +297,33 @@ export async function debugFirebase() {
     return
   }
 
-  console.log('🔧 Running Firebase diagnostics...')
+  console.log('Running Firebase diagnostics...')
 
   try {
-    // Check if Firebase debug functions are available
-    if (typeof (window as any).runFirebaseTests === 'function') {
-      console.log('🧪 Running Firebase tests...')
-      await (window as any).runFirebaseTests()
+    if (typeof window.runFirebaseTests === 'function') {
+      console.log('Running Firebase tests...')
+      await window.runFirebaseTests()
     } else {
-      console.log('ℹ️ Firebase test functions not available')
+      console.log('Firebase test functions not available')
     }
 
-    // Check SuperAdmin configuration
     const configResponse = await fetch('/api/fix-superadmin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'check-config' })
+      body: JSON.stringify({ action: 'check-config' }),
     })
 
-    const configResult = await configResponse.json()
+    const configResult = await parseResponse(configResponse)
 
     if (configResult.success) {
-      console.log('⚙️ SuperAdmin Configuration:')
+      console.log('SuperAdmin Configuration:')
       console.log('- Configured emails:', configResult.superAdminEmails)
       console.log('- Environment:', configResult.environment)
       console.log('- Server env set:', configResult.serverEnvSet)
       console.log('- Client env set:', configResult.clientEnvSet)
     }
-
   } catch (error) {
-    console.error('❌ Error running Firebase diagnostics:', error)
+    console.error('Error running Firebase diagnostics:', error)
   }
 }
 
@@ -186,7 +331,7 @@ export async function debugFirebase() {
  * Show available console helper functions
  */
 export function showConsoleHelpers() {
-  console.log('🔧 Available Console Helper Functions:')
+  console.log('Available Console Helper Functions:')
   console.log('')
   console.log('1. checkUserRoles() - Check all user roles and configuration')
   console.log('2. fixSuperAdmins() - Fix all SuperAdmin role assignments')
@@ -198,7 +343,7 @@ export function showConsoleHelpers() {
   console.log('  fixSpecificUser("tripfeelsbd@gmail.com")')
   console.log('  fixSuperAdmins()')
   console.log('')
-  console.log('💡 Tip: These functions only work in development mode')
+  console.log('Tip: These functions only work in development mode')
 }
 
 // Auto-register functions globally in development
@@ -208,11 +353,9 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   window.fixSpecificUser = fixSpecificUser
   window.debugFirebase = debugFirebase
 
-  // Show available functions
-  console.log('🔧 Console helpers loaded! Type showConsoleHelpers() to see available functions')
+  console.log('Console helpers loaded! Type showConsoleHelpers() to see available functions')
 
-  // Make showConsoleHelpers available globally
-  ;(window as any).showConsoleHelpers = showConsoleHelpers
+  window.showConsoleHelpers = showConsoleHelpers
 }
 
 // Default export for manual imports
@@ -221,5 +364,5 @@ export default {
   checkUserRoles,
   fixSpecificUser,
   debugFirebase,
-  showConsoleHelpers
+  showConsoleHelpers,
 }

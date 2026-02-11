@@ -20,7 +20,10 @@ export interface TestResult {
 export class FirebaseTester {
   private results: TestResult[] = []
 
-  private async runTest<T>(testName: string, testFunction: () => Promise<T>): Promise<TestResult> {
+  private async runTest<T>(
+    testName: string,
+    testFunction: () => Promise<T> | T,
+  ): Promise<TestResult> {
     const startTime = Date.now()
 
     try {
@@ -57,7 +60,7 @@ export class FirebaseTester {
   }
 
   async testConfiguration(): Promise<TestResult> {
-    return await this.runTest('Configuration Check', async () => {
+    return this.runTest('Configuration Check', () => {
       // Check if Firebase is initialized
       if (!auth || !db) {
         throw new Error('Firebase services not initialized')
@@ -88,7 +91,7 @@ export class FirebaseTester {
   }
 
   async testAuthConnection(): Promise<TestResult> {
-    return await this.runTest('Auth Connection', async () => {
+    return this.runTest('Auth Connection', () => {
       // Test auth connection by checking current user
       const user = auth.currentUser
 
@@ -101,7 +104,7 @@ export class FirebaseTester {
   }
 
   async testFirestoreConnection(): Promise<TestResult> {
-    return await this.runTest('Firestore Connection', async () => {
+    return this.runTest('Firestore Connection', () => {
       // Test Firestore by trying to access app info
       if (!db.app) {
         throw new Error('Firestore app not accessible')

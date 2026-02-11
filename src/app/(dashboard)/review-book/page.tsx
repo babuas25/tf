@@ -27,8 +27,8 @@ import { AirlineLogo } from '@/components/flight/shared/AirlineLogo'
 import { CountrySelector } from '@/components/shared/CountrySelector'
 import { PHONE_COUNTRIES } from '@/constants/countries'
 
-// Valid SSR codes as per API documentation
-const VALID_SSR_CODES = ['WCHR', 'VIP', 'VVIP', 'CIP', 'MAAS', 'FQTV']
+// Common SSR codes from docs; actual valid codes should come from offer-specific availableSSR.
+const FALLBACK_SSR_CODES = ['WCHR', 'VIP', 'VVIP', 'CIP', 'MAAS', 'FQTV']
 
 interface PassengerData {
   firstName: string
@@ -160,6 +160,7 @@ export default function ReviewBookPage() {
   // Data from sessionStorage
   const [passengerData, setPassengerData] = useState<Record<number, PassengerData>>({})
   const [offerDetails, setOfferDetails] = useState<OfferDetails | null>(null)
+  const [availableSSR, setAvailableSSR] = useState<string[]>([])
   const [selectedSSR, setSelectedSSR] = useState<Record<number, SSRSelection[]>>({})
   const [selectedSeats, setSelectedSeats] = useState<Record<number, string>>({})
   const [selectedMeals, setSelectedMeals] = useState<Record<number, string[]>>({})
@@ -191,6 +192,7 @@ export default function ReviewBookPage() {
       const storedPassengerData = sessionStorage.getItem('passengerData')
       const storedOfferDetails = sessionStorage.getItem('offerDetails')
       const storedSelectedSSR = sessionStorage.getItem('selectedSSR')
+      const storedAvailableSSR = sessionStorage.getItem('availableSSR')
       const storedSelectedSeats = sessionStorage.getItem('selectedSeats')
       const storedSelectedMeals = sessionStorage.getItem('selectedMeals')
       const storedSelectedBaggage = sessionStorage.getItem('selectedBaggage')
@@ -204,6 +206,9 @@ export default function ReviewBookPage() {
       }
       if (storedSelectedSSR) {
         setSelectedSSR(JSON.parse(storedSelectedSSR) as Record<number, SSRSelection[]>)
+      }
+      if (storedAvailableSSR) {
+        setAvailableSSR(JSON.parse(storedAvailableSSR) as string[])
       }
       if (storedSelectedSeats) {
         setSelectedSeats(JSON.parse(storedSelectedSeats) as Record<number, string>)
@@ -260,6 +265,11 @@ export default function ReviewBookPage() {
 
   // Build paxList for API
   const buildPaxList = () => {
+    const dynamicValidSSR = new Set(
+      availableSSR.map((code) => (typeof code === 'string' ? code.trim().toUpperCase() : '')),
+    )
+    const fallbackValidSSR = new Set(FALLBACK_SSR_CODES)
+
     const passengers = Object.entries(passengerData).map(([index, data]) => {
       const passengerIndex = Number(index)
       const ssrList = selectedSSR[passengerIndex] || []
@@ -322,20 +332,31 @@ export default function ReviewBookPage() {
         console.log('Processing SSR codes for passenger:', data.firstName, ssrList)
 
         const validSSRs = ssrList.filter((ssr) => {
-          const isValidCode = VALID_SSR_CODES.includes(ssr.code)
-          const isAlphabetic = /^[A-Z]+$/.test(ssr.code)
+          const normalizedCode = ssr.code.trim().toUpperCase()
+          const isValidFormat = /^[A-Z0-9]{3,5}$/.test(normalizedCode)
+          const isKnownByOffer =
+            dynamicValidSSR.size > 0 ? dynamicValidSSR.has(normalizedCode) : true
+          const isKnownFallback = fallbackValidSSR.has(normalizedCode)
+          const isValidCode = isValidFormat && (isKnownByOffer || isKnownFallback)
 
-          if (!isValidCode || !isAlphabetic) {
-            console.warn('Invalid SSR code filtered out:', ssr.code, { isValidCode, isAlphabetic })
+          if (!isValidCode) {
+            console.warn('SSR code filtered out from sellSSR payload:', ssr.code, {
+              normalizedCode,
+              isValidFormat,
+              isKnownByOffer,
+              isKnownFallback,
+            })
           }
 
-          return isValidCode && isAlphabetic
+          return isValidCode
         })
 
         if (validSSRs.length > 0) {
           paxEntry.sellSSR = validSSRs
             .map((ssr) => {
-              if (ssr.code === 'FQTV' && ssr.ffNumber) {
+              const normalizedCode = ssr.code.trim().toUpperCase()
+
+              if (normalizedCode === 'FQTV' && ssr.ffNumber) {
                 // Validate account number - only numeric characters allowed
                 const numericAccountNumber = ssr.ffNumber.replace(/\D/g, '')
                 if (!numericAccountNumber) {
@@ -345,7 +366,7 @@ export default function ReviewBookPage() {
 
                 return {
                   ssrRemark: null,
-                  ssrCode: ssr.code,
+                  ssrCode: normalizedCode,
                   loyaltyProgramAccount: {
                     airlineDesigCode:
                       offerDetails?.paxSegmentList[0]?.paxSegment?.operatingCarrierInfo
@@ -356,7 +377,7 @@ export default function ReviewBookPage() {
               }
               return {
                 ssrRemark: ssr.remark || null,
-                ssrCode: ssr.code,
+                ssrCode: normalizedCode,
               }
             })
             .filter(Boolean) // Remove any null entries
@@ -499,20 +520,40 @@ export default function ReviewBookPage() {
             },
             createdBy: session?.user?.email || 'Guest',
           }
-          fetch('/api/bookings', {
+          let bookingSaved = false
+
+          const saveRes = await fetch('/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(savePayload),
           })
-            .then(async (res) => {
-              if (!res.ok) {
-                const errText = await res.text()
-                console.warn('Failed to save booking to Firestore:', res.status, errText)
-              }
+          if (saveRes.ok) {
+            bookingSaved = true
+          } else {
+            const errText = await saveRes.text()
+            console.warn('Primary booking save failed:', saveRes.status, errText)
+          }
+
+          // Fallback sync with minimal payload if primary save failed.
+          if (!bookingSaved && createdRef) {
+            const fallbackRes = await fetch('/api/bookings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderReference: createdRef }),
             })
-            .catch((err) => console.warn('Failed to save booking to Firestore:', err))
-        } catch {
-          // ignore quota errors
+            if (fallbackRes.ok) {
+              bookingSaved = true
+            } else {
+              const fallbackErrText = await fallbackRes.text()
+              console.warn(
+                'Fallback booking save failed:',
+                fallbackRes.status,
+                fallbackErrText,
+              )
+            }
+          }
+        } catch (saveErr) {
+          console.warn('Booking save step failed before redirect:', saveErr)
         }
         // Clear other sessionStorage
         sessionStorage.removeItem('passengerData')

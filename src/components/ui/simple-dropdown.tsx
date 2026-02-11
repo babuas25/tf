@@ -81,11 +81,6 @@ export function SimpleDropdown({
 
   const selectedOption = options.find((option) => option.value === value)
 
-  // Format label: convert to lowercase then capitalize each word
-  const formatLabel = (label: string) => {
-    return label.toLowerCase()
-  }
-
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -99,7 +94,7 @@ export function SimpleDropdown({
           {selectedOption
             ? selectedOption.value === ''
               ? selectedOption.label
-              : formatLabel(selectedOption.label)
+              : selectedOption.label
             : placeholder}
         </span>
         <ChevronDown
@@ -132,7 +127,7 @@ export function SimpleDropdown({
                       : 'text-gray-900 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white font-medium'
                   }`}
                 >
-                  {option.value === '' ? option.label : formatLabel(option.label)}
+                  {option.label}
                 </button>
               ))}
             </div>

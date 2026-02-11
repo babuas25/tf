@@ -3,40 +3,142 @@ import { getServerSession } from 'next-auth/next'
 
 import { authOptions } from '@/lib/auth/nextauth'
 import { adminDb } from '@/lib/firebase/admin'
-import { isSuperAdminEmail, getSuperAdminEmails } from '@/lib/firebase/firestore'
+import { getSuperAdminEmails, isSuperAdminEmail } from '@/lib/firebase/firestore'
+
+type FixAction =
+  | 'check-config'
+  | 'list-all-users'
+  | 'fix-all-superadmins'
+  | 'fix-specific-user'
+  | 'create-superadmin'
+
+interface UserListItem {
+  uid: string
+  email: string
+  role: string
+  category: string
+  firstName: string
+  lastName: string
+  isActive: boolean
+  isSuperAdminEmail: boolean
+}
+
+interface PostBody {
+  action: FixAction | undefined
+  email: string | undefined
+  uid: string | undefined
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const readString = (record: Record<string, unknown>, key: string): string | undefined => {
+  const value = record[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+const readBoolean = (record: Record<string, unknown>, key: string): boolean | undefined => {
+  const value = record[key]
+  return typeof value === 'boolean' ? value : undefined
+}
+
+const normalizeEmail = (value: string | undefined): string => value?.trim().toLowerCase() ?? ''
+
+const parsePostBody = (value: unknown): PostBody => {
+  if (!isRecord(value)) {
+    return {
+      action: undefined,
+      email: undefined,
+      uid: undefined,
+    }
+  }
+
+  const action = readString(value, 'action')
+  const email = readString(value, 'email')
+  const uid = readString(value, 'uid')
+
+  const allowedActions: FixAction[] = [
+    'check-config',
+    'list-all-users',
+    'fix-all-superadmins',
+    'fix-specific-user',
+    'create-superadmin',
+  ]
+
+  return {
+    action: allowedActions.includes(action as FixAction) ? (action as FixAction) : undefined,
+    email,
+    uid,
+  }
+}
+
+const toRecord = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {})
+
+const toUserListItem = (doc: FirebaseFirestore.DocumentSnapshot): UserListItem => {
+  const rawData: unknown = doc.data()
+  const data = toRecord(rawData)
+  const profile = toRecord(data.profile)
+  const metadata = toRecord(data.metadata)
+
+  const email = readString(data, 'email') ?? ''
+  const role = readString(data, 'role') ?? ''
+  const category = readString(data, 'category') ?? ''
+  const firstName = readString(profile, 'firstName') ?? ''
+  const lastName = readString(profile, 'lastName') ?? ''
+  const isActive = readBoolean(metadata, 'isActive') ?? true
+
+  return {
+    uid: doc.id,
+    email,
+    role,
+    category,
+    firstName,
+    lastName,
+    isActive,
+    isSuperAdminEmail: isSuperAdminEmail(email),
+  }
+}
+
+const ensureDevelopment = () => {
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json(
+      { error: 'Fix endpoints are only available in development' },
+      { status: 404 },
+    )
+  }
+
+  return null
+}
+
+const ensureSuperAdminSession = async () => {
+  const session = await getServerSession(authOptions as never)
+  const userObj =
+    session && typeof session === 'object' && 'user' in session
+      ? (session as { user?: Record<string, unknown> }).user
+      : undefined
+  const role = userObj && typeof userObj.role === 'string' ? userObj.role : undefined
+
+  if (!session || role !== 'SuperAdmin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+
+  return null
+}
 
 export async function POST(request: Request) {
   try {
-    // Only allow in development environment
-    if (process.env.NODE_ENV !== 'development') {
-      return NextResponse.json(
-        { error: 'Fix endpoints are only available in development' },
-        { status: 404 },
-      )
-    }
+    const envRejection = ensureDevelopment()
+    if (envRejection) return envRejection
 
-    const session = await getServerSession(authOptions as never)
-    const userObj =
-      session && typeof session === 'object' && 'user' in session
-        ? (session as { user?: Record<string, unknown> }).user
-        : undefined
-    const role = userObj && typeof userObj.role === 'string' ? userObj.role : undefined
+    const authRejection = await ensureSuperAdminSession()
+    if (authRejection) return authRejection
 
-    // Allow access for existing SuperAdmins or if no users exist yet
-    if (!session && role !== 'SuperAdmin') {
-      // Check if there are any SuperAdmins in the system
-      const superAdminQuery = await adminDb
-        .collection('users')
-        .where('role', '==', 'SuperAdmin')
-        .limit(1)
-        .get()
-      if (!superAdminQuery.empty) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-      }
-    }
+    const parsedJson: unknown = await request.json().catch(() => ({}))
+    const body = parsePostBody(parsedJson)
 
-    const body = await request.json()
-    const { action, email, uid } = body
+    const action = body.action
+    const email = normalizeEmail(body.email)
+    const uid = body.uid?.trim() ?? ''
 
     const superAdminEmails = getSuperAdminEmails()
     console.log('SuperAdmin emails configured:', superAdminEmails)
@@ -46,49 +148,37 @@ export async function POST(request: Request) {
         success: true,
         superAdminEmails,
         environment: process.env.NODE_ENV,
-        serverEnvSet: !!process.env.SUPER_ADMIN_EMAILS,
-        clientEnvSet: !!process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS,
+        serverEnvSet: Boolean(process.env.SUPER_ADMIN_EMAILS),
+        clientEnvSet: Boolean(process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS),
       })
     }
 
     if (action === 'list-all-users') {
       const usersSnapshot = await adminDb.collection('users').get()
-      const users = usersSnapshot.docs.map((doc) => {
-        const data = doc.data()
-        return {
-          uid: doc.id,
-          email: data.email,
-          role: data.role,
-          category: data.category,
-          firstName: data.profile?.firstName || '',
-          lastName: data.profile?.lastName || '',
-          isSuperAdminEmail: isSuperAdminEmail(data.email || ''),
-        }
-      })
+      const users = usersSnapshot.docs.map((doc) => toUserListItem(doc))
 
       return NextResponse.json({
         success: true,
         users,
         totalUsers: users.length,
-        superAdmins: users.filter((u) => u.role === 'SuperAdmin'),
-        shouldBeSuperAdmins: users.filter((u) => u.isSuperAdminEmail && u.role !== 'SuperAdmin'),
+        superAdmins: users.filter((user) => user.role === 'SuperAdmin'),
+        shouldBeSuperAdmins: users.filter(
+          (user) => user.isSuperAdminEmail && user.role !== 'SuperAdmin',
+        ),
       })
     }
 
     if (action === 'fix-all-superadmins') {
-      // Get all users from Firestore
       const usersSnapshot = await adminDb.collection('users').get()
       const fixedUsers: Array<{ uid: string; email: string; oldRole: string; newRole: string }> = []
       const errors: Array<{ uid: string; email: string; error: string }> = []
 
       for (const doc of usersSnapshot.docs) {
-        const userData = doc.data()
-        const userId = doc.id
-        const userEmail = userData.email || ''
+        const user = toUserListItem(doc)
 
-        if (isSuperAdminEmail(userEmail) && userData.role !== 'SuperAdmin') {
+        if (user.isSuperAdminEmail && user.role !== 'SuperAdmin') {
           try {
-            await adminDb.collection('users').doc(userId).update({
+            await adminDb.collection('users').doc(user.uid).update({
               role: 'SuperAdmin',
               category: 'Admin',
               'metadata.updatedAt': new Date(),
@@ -96,20 +186,20 @@ export async function POST(request: Request) {
             })
 
             fixedUsers.push({
-              uid: userId,
-              email: userEmail,
-              oldRole: userData.role || 'undefined',
+              uid: user.uid,
+              email: user.email,
+              oldRole: user.role || 'undefined',
               newRole: 'SuperAdmin',
             })
 
-            console.log(`✅ Updated user ${userEmail} to SuperAdmin`)
+            console.log(`Updated user ${user.email} to SuperAdmin`)
           } catch (error) {
             errors.push({
-              uid: userId,
-              email: userEmail,
+              uid: user.uid,
+              email: user.email,
               error: error instanceof Error ? error.message : 'Unknown error',
             })
-            console.error(`❌ Failed to update user ${userEmail}:`, error)
+            console.error(`Failed to update user ${user.email}:`, error)
           }
         }
       }
@@ -124,8 +214,8 @@ export async function POST(request: Request) {
     }
 
     if (action === 'fix-specific-user' && (email || uid)) {
-      let userDoc
-      let userId
+      let userDoc: FirebaseFirestore.DocumentSnapshot | undefined
+      let userId = ''
 
       if (uid) {
         userDoc = await adminDb.collection('users').doc(uid).get()
@@ -133,40 +223,39 @@ export async function POST(request: Request) {
       } else if (email) {
         const userQuery = await adminDb
           .collection('users')
-          .where('email', '==', email.toLowerCase())
+          .where('email', '==', email)
           .limit(1)
           .get()
-        if (!userQuery.empty) {
-          userDoc = userQuery.docs[0]
-          if (userDoc) {
-            userId = userDoc.id
-          }
+
+        const firstDoc = userQuery.docs[0]
+        if (firstDoc) {
+          userDoc = firstDoc
+          userId = firstDoc.id
         }
       }
 
-      if (!userDoc || !userDoc.exists) {
+      if (!userDoc || !userDoc.exists || !userId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
 
-      const userData = userDoc.data()
-      const userEmail = userData?.email || ''
+      const user = toUserListItem(userDoc)
 
-      if (!isSuperAdminEmail(userEmail)) {
+      if (!isSuperAdminEmail(user.email)) {
         return NextResponse.json(
-          { error: `Email ${userEmail} is not configured as a SuperAdmin email` },
+          { error: `Email ${user.email} is not configured as a SuperAdmin email` },
           { status: 400 },
         )
       }
 
-      if (userData?.role === 'SuperAdmin') {
+      if (user.role === 'SuperAdmin') {
         return NextResponse.json({
           success: true,
           message: 'User is already a SuperAdmin',
           user: {
             uid: userId,
-            email: userEmail,
-            role: userData.role,
-            category: userData.category,
+            email: user.email,
+            role: user.role,
+            category: user.category,
           },
         })
       }
@@ -181,16 +270,16 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
           success: true,
-          message: `Successfully updated ${userEmail} to SuperAdmin`,
+          message: `Successfully updated ${user.email} to SuperAdmin`,
           user: {
             uid: userId,
-            email: userEmail,
-            oldRole: userData?.role || 'undefined',
+            email: user.email,
+            oldRole: user.role || 'undefined',
             newRole: 'SuperAdmin',
           },
         })
       } catch (error) {
-        console.error(`Failed to update user ${userEmail}:`, error)
+        console.error(`Failed to update user ${user.email}:`, error)
         return NextResponse.json(
           {
             error: 'Failed to update user role',
@@ -209,12 +298,12 @@ export async function POST(request: Request) {
         )
       }
 
-      // Check if user already exists
       const existingUserQuery = await adminDb
         .collection('users')
-        .where('email', '==', email.toLowerCase())
+        .where('email', '==', email)
         .limit(1)
         .get()
+
       if (!existingUserQuery.empty) {
         return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 })
       }
@@ -225,7 +314,7 @@ export async function POST(request: Request) {
 
         const userData = {
           uid: newUserId,
-          email: email.toLowerCase(),
+          email,
           role: 'SuperAdmin',
           category: 'Admin',
           profile: {
@@ -254,7 +343,7 @@ export async function POST(request: Request) {
           message: `Successfully created SuperAdmin user for ${email}`,
           user: {
             uid: newUserId,
-            email: email.toLowerCase(),
+            email,
             role: 'SuperAdmin',
             category: 'Admin',
           },
@@ -286,34 +375,20 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    // Only allow in development environment
-    if (process.env.NODE_ENV !== 'development') {
-      return NextResponse.json(
-        { error: 'Fix endpoints are only available in development' },
-        { status: 404 },
-      )
-    }
+    const envRejection = ensureDevelopment()
+    if (envRejection) return envRejection
+
+    const authRejection = await ensureSuperAdminSession()
+    if (authRejection) return authRejection
 
     const superAdminEmails = getSuperAdminEmails()
-
-    // Get all users from Firestore
     const usersSnapshot = await adminDb.collection('users').get()
-    const users = usersSnapshot.docs.map((doc) => {
-      const data = doc.data()
-      return {
-        uid: doc.id,
-        email: data.email,
-        role: data.role,
-        category: data.category,
-        firstName: data.profile?.firstName || '',
-        lastName: data.profile?.lastName || '',
-        isActive: data.metadata?.isActive ?? true,
-        isSuperAdminEmail: isSuperAdminEmail(data.email || ''),
-      }
-    })
+    const users = usersSnapshot.docs.map((doc) => toUserListItem(doc))
 
-    const superAdmins = users.filter((u) => u.role === 'SuperAdmin')
-    const shouldBeSuperAdmins = users.filter((u) => u.isSuperAdminEmail && u.role !== 'SuperAdmin')
+    const superAdmins = users.filter((user) => user.role === 'SuperAdmin')
+    const shouldBeSuperAdmins = users.filter(
+      (user) => user.isSuperAdminEmail && user.role !== 'SuperAdmin',
+    )
 
     return NextResponse.json({
       success: true,
@@ -324,7 +399,7 @@ export async function GET() {
       users,
       issues: {
         missingRoles: shouldBeSuperAdmins,
-        inactiveUsers: users.filter((u) => !u.isActive),
+        inactiveUsers: users.filter((user) => !user.isActive),
       },
       actions: [
         'check-config: Check SuperAdmin email configuration',

@@ -25,12 +25,12 @@ export async function GET() {
       session && typeof session === 'object' && 'user' in session
         ? (session as { user?: { id?: string; email?: string; role?: string } }).user
         : undefined
-    if (!sessionUserObj || !sessionUserObj.id || !sessionUserObj.email || !sessionUserObj.role) {
+    if (!sessionUserObj || !sessionUserObj.email || !sessionUserObj.role) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const sessionUser = {
-      id: sessionUserObj.id,
+      id: sessionUserObj.id ?? sessionUserObj.email,
       email: sessionUserObj.email,
       role: sessionUserObj.role,
     }
@@ -89,9 +89,9 @@ export async function POST(request: NextRequest) {
     let user: BookingUser | null = null
     let permissions: ReturnType<typeof getBookingPermissions> | null = null
 
-    if (sessionUserObj?.id && sessionUserObj?.email && sessionUserObj?.role) {
+    if (sessionUserObj?.email && sessionUserObj?.role) {
       const sessionUser = {
-        id: sessionUserObj.id,
+        id: sessionUserObj.id ?? sessionUserObj.email,
         email: sessionUserObj.email,
         role: sessionUserObj.role,
       }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         createdByEmail?: string
       } = {
         respondedOn,
-        createdBy: body.createdBy ?? user?.id ?? user?.email ?? 'Guest',
+        createdBy: body.createdBy ?? user?.email ?? user?.id ?? 'Guest',
       }
       if (user?.email) {
         metadata.createdByEmail = user.email
@@ -192,10 +192,14 @@ export async function POST(request: NextRequest) {
       // For updates, check if user can update this booking (only if authenticated)
       const existing = existingRecord as { createdBy: string; createdByEmail?: string } | null
       if (existing && user && permissions && !permissions.canViewAll) {
+        const userId = user.id.trim().toLowerCase()
+        const userEmail = user.email.trim().toLowerCase()
+        const createdBy = existing.createdBy.trim().toLowerCase()
+        const createdByEmail = (existing.createdByEmail ?? '').trim().toLowerCase()
         const canUpdate =
-          existing.createdBy === user.id ||
-          existing.createdBy === user.email ||
-          existing.createdByEmail === user.email
+          (userId !== '' && createdBy === userId) ||
+          (userEmail !== '' && createdBy === userEmail) ||
+          (userEmail !== '' && createdByEmail === userEmail)
 
         if (!canUpdate) {
           return NextResponse.json(
@@ -211,7 +215,7 @@ export async function POST(request: NextRequest) {
         createdByEmail?: string
       } = {
         respondedOn: data.respondedOn ?? new Date().toISOString(),
-        createdBy: existingRecord?.createdBy ?? user?.id ?? user?.email ?? 'Guest',
+        createdBy: existingRecord?.createdBy ?? user?.email ?? user?.id ?? 'Guest',
       }
       const emailToUse = existingRecord?.createdByEmail ?? user?.email
       if (emailToUse) {

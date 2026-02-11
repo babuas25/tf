@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useMemo, useState, useRef } from 'react'
 
 import { CustomDropdown } from '@/components/ui/custom-dropdown'
-import { UserManagementPageSkeleton } from '@/components/ui/skeleton-loading'
-import { PermissionCheckingSplash } from '@/components/ui/splash-screen'
+import { UserManagementCompactSkeleton } from '@/components/ui/skeleton-loading'
 import { type UserDocument, type RoleType } from '@/lib/firebase/firestore'
 import { formatFirebaseTimestamp } from '@/lib/utils'
 import { ROLES, ROLE_CATEGORIES, type CategoryType } from '@/lib/utils/constants'
@@ -25,6 +24,9 @@ interface ApiResponse {
 export default function AdminUserManagement() {
   const { data: session, status } = useSession()
   const currentUserRole = (session?.user as { role?: RoleType } | undefined)?.role
+  const isSessionLoading = status === 'loading'
+  const canManage =
+    !isSessionLoading && (currentUserRole === ROLES.SUPER_ADMIN || currentUserRole === ROLES.ADMIN)
 
   const [users, setUsers] = useState<UserDocument[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -46,6 +48,7 @@ export default function AdminUserManagement() {
 
   // Request deduplication
   const loadingRef = useRef<AbortController | null>(null)
+  const lastRequestKeyRef = useRef<string>('')
 
   const roleOptions: RoleType[] = useMemo(
     () => [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STAFF, ROLES.PARTNER, ROLES.AGENT, ROLES.USER],
@@ -121,7 +124,11 @@ export default function AdminUserManagement() {
     )
   }
 
-  const loadUsers = async (page: number = 1) => {
+  const loadUsers = async (page: number = 1, force: boolean = false) => {
+    const requestKey = `${page}|${roleFilter}|${search.trim().toLowerCase()}`
+    if (!force && lastRequestKeyRef.current === requestKey) return
+    lastRequestKeyRef.current = requestKey
+
     // Cancel any existing request
     if (loadingRef.current) {
       loadingRef.current.abort()
@@ -172,6 +179,7 @@ export default function AdminUserManagement() {
 
       console.error('Error loading users:', e)
       setError(e instanceof Error ? e.message : 'Failed to load users')
+      lastRequestKeyRef.current = ''
     } finally {
       if (!controller.signal.aborted) {
         setIsLoading(false)
@@ -181,9 +189,6 @@ export default function AdminUserManagement() {
   }
 
   useEffect(() => {
-    void loadUsers(1)
-
-    // Cleanup on unmount
     return () => {
       if (loadingRef.current) {
         loadingRef.current.abort()
@@ -191,34 +196,23 @@ export default function AdminUserManagement() {
     }
   }, [])
 
-  // Refresh users data when session changes (after login)
-  useEffect(() => {
-    if (session) {
-      void loadUsers(1)
-    }
-  }, [session])
-
   // Debounced search effect
   useEffect(() => {
-    if (!session) return
+    if (status !== 'authenticated' || !canManage) return
 
     const timeoutId = setTimeout(
       () => {
         setCurrentPage(1)
         void loadUsers(1)
       },
-      search ? 500 : 100,
-    ) // 500ms debounce for search, 100ms for role filter
+      search ? 500 : 120,
+    ) // 500ms debounce for search, small delay for role/default load
 
     return () => clearTimeout(timeoutId)
-  }, [roleFilter, search, session])
+  }, [roleFilter, search, status, canManage])
 
   // Since filtering is now done server-side, we can use users directly
   const filteredUsers = users
-
-  const isSessionLoading = status === 'loading'
-  const canManage =
-    !isSessionLoading && (currentUserRole === ROLES.SUPER_ADMIN || currentUserRole === ROLES.ADMIN)
 
   const handleRoleChange = async (targetUser: UserDocument, newRole: RoleType) => {
     if (!canManage) return
@@ -386,7 +380,11 @@ export default function AdminUserManagement() {
   }
 
   if (isSessionLoading) {
-    return <PermissionCheckingSplash />
+    return (
+      <div className="pt-2 px-2 md:px-3">
+        <UserManagementCompactSkeleton showAdminNotice={true} />
+      </div>
+    )
   }
 
   if (!canManage) {
@@ -398,8 +396,16 @@ export default function AdminUserManagement() {
     )
   }
 
+  if (isLoading && users.length === 0) {
+    return (
+      <div className="pt-2 px-2 md:px-3">
+        <UserManagementCompactSkeleton showAdminNotice={currentUserRole === ROLES.ADMIN} />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="pt-2 px-2 md:px-3 space-y-6">
       <div className="p-6 bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">
@@ -408,7 +414,7 @@ export default function AdminUserManagement() {
                 User Management
               </h1>
               <button
-                onClick={() => void loadUsers(currentPage)}
+                onClick={() => void loadUsers(currentPage, true)}
                 disabled={isLoading}
                 className="p-2 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/30 transition-colors duration-200 disabled:opacity-50"
                 title="Refresh users data"
@@ -463,10 +469,7 @@ export default function AdminUserManagement() {
         </div>
       )}
 
-      {isLoading && filteredUsers.length === 0 ? (
-        <UserManagementPageSkeleton />
-      ) : (
-        <>
+      <>
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto rounded-xl border border-white/30 bg-white/20 backdrop-blur-md shadow-lg relative">
             {isLoading && filteredUsers.length > 0 && (
@@ -547,7 +550,7 @@ export default function AdminUserManagement() {
                     </tr>
                   )
                 })}
-                {filteredUsers.length === 0 && (
+                {filteredUsers.length === 0 && !isLoading && (
                   <tr>
                     <td
                       colSpan={5}
@@ -854,7 +857,7 @@ export default function AdminUserManagement() {
                 </div>
               )
             })}
-            {filteredUsers.length === 0 && (
+            {filteredUsers.length === 0 && !isLoading && (
               <div className="p-6 bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg text-center">
                 <div className="text-sm text-gray-600 dark:text-gray-400">No users found.</div>
               </div>
@@ -867,11 +870,9 @@ export default function AdminUserManagement() {
           >
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                {isLoading ? (
-                  <div className="h-5 w-48 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
-                ) : (
-                  `Showing ${(currentPage - 1) * 20 + 1} to ${Math.min(currentPage * 20, totalUsers)} of ${totalUsers} users`
-                )}
+                {isLoading
+                  ? 'Loading users...'
+                  : `Showing ${(currentPage - 1) * 20 + 1} to ${Math.min(currentPage * 20, totalUsers)} of ${totalUsers} users`}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -915,8 +916,7 @@ export default function AdminUserManagement() {
               </div>
             </div>
           </div>
-        </>
-      )}
+      </>
     </div>
   )
 }

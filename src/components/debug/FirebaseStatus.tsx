@@ -19,11 +19,9 @@ export default function FirebaseStatus({ showInProduction = false }: FirebaseSta
   // Don't show in production unless explicitly enabled
   const shouldShow = process.env.NODE_ENV !== 'production' || showInProduction
 
-  if (!shouldShow) {
-    return null
-  }
-
   useEffect(() => {
+    if (!shouldShow) return
+
     let intervalId: NodeJS.Timeout
 
     const updateDebugInfo = () => {
@@ -53,7 +51,11 @@ export default function FirebaseStatus({ showInProduction = false }: FirebaseSta
       if (intervalId) clearInterval(intervalId)
       unsubscribe()
     }
-  }, [])
+  }, [shouldShow])
+
+  if (!shouldShow) {
+    return null
+  }
 
   if (!debugInfo) {
     return (

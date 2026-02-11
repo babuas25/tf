@@ -7,17 +7,18 @@ export const proxy = withAuth(
   function proxy(req) {
     const token = req.nextauth.token
     const { pathname, searchParams } = req.nextUrl
+    const isInactive = token && (token as { isActive?: boolean }).isActive === false
 
     // Redirect authenticated users from auth page to their dashboard
     // BUT preserve callbackUrl if it exists
-    if (pathname === '/auth' && token) {
+    if (pathname === '/auth' && token && !isInactive) {
       const callbackUrl = searchParams.get('callbackUrl')
-      
+
       if (callbackUrl) {
         // If there's a callbackUrl, redirect to it instead of the dashboard
         return NextResponse.redirect(new URL(callbackUrl, req.url))
       }
-      
+
       // Otherwise, redirect to role-based dashboard
       const userRole = token.role as RoleType
       const dashboardRoute = DASHBOARD_ROUTES[userRole] || DASHBOARD_ROUTES[ROLES.USER]
@@ -42,6 +43,12 @@ export const proxy = withAuth(
     // Redirect unauthenticated users to auth page for protected routes
     if (!token) {
       return NextResponse.redirect(new URL('/auth', req.url))
+    }
+
+    if (isInactive && pathname !== '/auth') {
+      const redirectUrl = new URL('/auth', req.url)
+      redirectUrl.searchParams.set('error', 'inactive')
+      return NextResponse.redirect(redirectUrl)
     }
 
     const userRole = token.role as keyof typeof DASHBOARD_ROUTES
@@ -99,8 +106,8 @@ export const proxy = withAuth(
           return true
         }
 
-        // Require authentication for all other routes
-        return !!token
+        // Require authentication and active status for all other routes
+        return !!token && (token as { isActive?: boolean }).isActive !== false
       },
     },
   },

@@ -586,6 +586,46 @@ input[type='checkbox'] {
   accent-color: hsl(var(--primary));
 }
 
+/* Booking advanced-filter field theming (dark + light via design tokens) */
+.tf-advanced-input {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  border-color: hsl(var(--border));
+  accent-color: hsl(var(--primary));
+  color-scheme: light;
+}
+
+.dark .tf-advanced-input {
+  color-scheme: dark;
+}
+
+.tf-advanced-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+select.tf-advanced-input option {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+
+/* Hide native date icon; component renders themed icon button */
+.tf-advanced-date::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Remove native number spin controls to keep consistent themed +/- controls */
+.tf-advanced-number::-webkit-outer-spin-button,
+.tf-advanced-number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tf-advanced-number {
+  -moz-appearance: textfield;
+}
+
 /* Fix for auto-scroll warning with fixed/sticky positioned elements */
 html {
   scroll-padding-top: 3.5rem; /* 56px = h-14 for fixed header */

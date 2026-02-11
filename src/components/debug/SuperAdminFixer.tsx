@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { Settings, Shield, RefreshCw, Users, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
 
 interface User {
   uid: string
@@ -16,14 +16,109 @@ interface User {
 
 interface FixResult {
   success: boolean
-  message?: string
-  users?: User[]
-  fixedUsers?: Array<{ uid: string; email: string; oldRole: string; newRole: string }>
-  errors?: Array<{ uid: string; email: string; error: string }>
-  superAdminEmails?: string[]
-  totalUsers?: number
-  currentSuperAdmins?: number
-  shouldBeSuperAdmins?: number
+  error?: string | undefined
+  message?: string | undefined
+  users?: User[] | undefined
+  fixedUsers?: Array<{ uid: string; email: string; oldRole: string; newRole: string }> | undefined
+  errors?: Array<{ uid: string; email: string; error: string }> | undefined
+  superAdminEmails?: string[] | undefined
+  totalUsers?: number | undefined
+  currentSuperAdmins?: number | undefined
+  shouldBeSuperAdmins?: number | undefined
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const readString = (record: Record<string, unknown>, key: string): string | undefined => {
+  const value = record[key]
+  return typeof value === 'string' ? value : undefined
+}
+
+const readBoolean = (record: Record<string, unknown>, key: string): boolean | undefined => {
+  const value = record[key]
+  return typeof value === 'boolean' ? value : undefined
+}
+
+const readNumber = (record: Record<string, unknown>, key: string): number | undefined => {
+  const value = record[key]
+  return typeof value === 'number' ? value : undefined
+}
+
+const readArray = (record: Record<string, unknown>, key: string): unknown[] => {
+  const value = record[key]
+  return Array.isArray(value) ? value : []
+}
+
+const parseUser = (value: unknown): User | null => {
+  if (!isRecord(value)) return null
+
+  return {
+    uid: readString(value, 'uid') ?? '',
+    email: readString(value, 'email') ?? '',
+    role: readString(value, 'role') ?? '',
+    category: readString(value, 'category') ?? '',
+    firstName: readString(value, 'firstName') ?? '',
+    lastName: readString(value, 'lastName') ?? '',
+    isActive: readBoolean(value, 'isActive') ?? true,
+    isSuperAdminEmail: readBoolean(value, 'isSuperAdminEmail') ?? false,
+  }
+}
+
+const parseFixedUser = (
+  value: unknown,
+): { uid: string; email: string; oldRole: string; newRole: string } | null => {
+  if (!isRecord(value)) return null
+
+  return {
+    uid: readString(value, 'uid') ?? '',
+    email: readString(value, 'email') ?? '',
+    oldRole: readString(value, 'oldRole') ?? '',
+    newRole: readString(value, 'newRole') ?? '',
+  }
+}
+
+const parseFixError = (value: unknown): { uid: string; email: string; error: string } | null => {
+  if (!isRecord(value)) return null
+
+  return {
+    uid: readString(value, 'uid') ?? '',
+    email: readString(value, 'email') ?? '',
+    error: readString(value, 'error') ?? '',
+  }
+}
+
+const parseFixResult = (value: unknown): FixResult => {
+  if (!isRecord(value)) {
+    return { success: false, message: 'Invalid API response' }
+  }
+
+  const users = readArray(value, 'users').map(parseUser).filter((item): item is User => item !== null)
+  const fixedUsers = readArray(value, 'fixedUsers')
+    .map(parseFixedUser)
+    .filter(
+      (item): item is { uid: string; email: string; oldRole: string; newRole: string } =>
+        item !== null,
+    )
+  const errors = readArray(value, 'errors')
+    .map(parseFixError)
+    .filter((item): item is { uid: string; email: string; error: string } => item !== null)
+  const superAdminEmails = readArray(value, 'superAdminEmails').filter(
+    (item): item is string => typeof item === 'string',
+  )
+
+  return {
+    success: readBoolean(value, 'success') ?? false,
+    error: readString(value, 'error'),
+    message: readString(value, 'message'),
+    users: users.length > 0 ? users : undefined,
+    fixedUsers: fixedUsers.length > 0 ? fixedUsers : undefined,
+    errors: errors.length > 0 ? errors : undefined,
+    superAdminEmails: superAdminEmails.length > 0 ? superAdminEmails : undefined,
+    totalUsers: readNumber(value, 'totalUsers'),
+    currentSuperAdmins: readNumber(value, 'currentSuperAdmins'),
+    shouldBeSuperAdmins: readNumber(value, 'shouldBeSuperAdmins'),
+  }
 }
 
 export default function SuperAdminFixer() {
@@ -42,12 +137,18 @@ export default function SuperAdminFixer() {
     setLoading(true)
     try {
       const response = await fetch('/api/fix-superadmin')
-      const data = await response.json()
+      const payload: unknown = await response.json().catch(() => ({}))
+      const data = parseFixResult(payload)
+
       if (data.success) {
-        setUsers(data.users || [])
+        setUsers(data.users ?? [])
         setResult(data)
       } else {
-        setResult({ success: false, message: data.error })
+        setResult({
+          ...data,
+          success: false,
+          message: data.error ?? data.message ?? 'Failed to fetch users',
+        })
       }
     } catch (_error) {
       setResult({ success: false, message: 'Failed to fetch users' })
@@ -64,7 +165,8 @@ export default function SuperAdminFixer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'fix-all-superadmins' }),
       })
-      const data = await response.json()
+      const payload: unknown = await response.json().catch(() => ({}))
+      const data = parseFixResult(payload)
       setResult(data)
       if (data.success) {
         await fetchUsers() // Refresh the user list
@@ -84,12 +186,14 @@ export default function SuperAdminFixer() {
 
     setLoading(true)
     try {
+      const normalizedEmail = email.trim().toLowerCase()
       const response = await fetch('/api/fix-superadmin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'fix-specific-user', email: email.trim() }),
+        body: JSON.stringify({ action: 'fix-specific-user', email: normalizedEmail }),
       })
-      const data = await response.json()
+      const payload: unknown = await response.json().catch(() => ({}))
+      const data = parseFixResult(payload)
       setResult(data)
       if (data.success) {
         await fetchUsers() // Refresh the user list
@@ -110,7 +214,8 @@ export default function SuperAdminFixer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'check-config' }),
       })
-      const data = await response.json()
+      const payload: unknown = await response.json().catch(() => ({}))
+      const data = parseFixResult(payload)
       setResult(data)
     } catch (_error) {
       setResult({ success: false, message: 'Failed to check configuration' })

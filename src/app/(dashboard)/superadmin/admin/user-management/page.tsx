@@ -3,11 +3,10 @@
 import { ChevronDown, ChevronRight, Trash2, RefreshCw } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 
 import SuperAdminFixer from '@/components/debug/SuperAdminFixer'
-import { UserManagementPageSkeleton } from '@/components/ui/skeleton-loading'
-import { PermissionCheckingSplash } from '@/components/ui/splash-screen'
+import { CustomDropdown } from '@/components/ui/custom-dropdown'
+import { UserManagementCompactSkeleton } from '@/components/ui/skeleton-loading'
 import { type UserDocument, type RoleType } from '@/lib/firebase/firestore'
 import { formatFirebaseTimestamp } from '@/lib/utils'
 import { ROLES, ROLE_CATEGORIES } from '@/lib/utils/constants'
@@ -25,15 +24,46 @@ export default function SuperAdminUserManagement() {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<UserDocument>>({})
-  const [_openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set())
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set())
+  const lastLoadKeyRef = useRef<string>('')
 
   const roleOptions: RoleType[] = useMemo(
     () => [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STAFF, ROLES.PARTNER, ROLES.AGENT, ROLES.USER],
     [],
   )
+  const allCategories = useMemo(() => {
+    const categories = new Set<string>()
+    Object.values(ROLE_CATEGORIES).forEach((roleCategories) => {
+      roleCategories.forEach((category) => categories.add(category))
+    })
+    return Array.from(categories)
+  }, [])
 
   const isRoleType = (value: unknown): value is RoleType =>
     (roleOptions as readonly string[]).includes(value as string)
+
+  const getNormalizedRole = (rawRole: string): RoleType | null => {
+    const normalized = rawRole.trim().toLowerCase()
+    const matchedRole = roleOptions.find((role) => role.toLowerCase() === normalized)
+    return matchedRole ?? null
+  }
+
+  const toggleDropdown = (id: string) => {
+    setOpenDropdowns((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.clear()
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const closeAllDropdowns = () => {
+    setOpenDropdowns(new Set())
+  }
 
   type UsersResponse = {
     users: UserDocument[]
@@ -45,7 +75,11 @@ export default function SuperAdminUserManagement() {
     'users' in raw &&
     Array.isArray((raw as { users: unknown }).users)
 
-  const loadUsers = async () => {
+  const loadUsers = async (force: boolean = false) => {
+    const requestKey = `users:${currentUserRole ?? 'unknown'}`
+    if (!force && lastLoadKeyRef.current === requestKey) return
+    lastLoadKeyRef.current = requestKey
+
     try {
       setIsLoading(true)
       const res = await fetch('/api/admin/users')
@@ -58,6 +92,7 @@ export default function SuperAdminUserManagement() {
 
       setUsers(raw.users)
     } catch (_e) {
+      lastLoadKeyRef.current = ''
       setError('Failed to load users')
     } finally {
       setIsLoading(false)
@@ -65,27 +100,13 @@ export default function SuperAdminUserManagement() {
   }
 
   useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const hasAccess = currentUserRole === ROLES.SUPER_ADMIN || currentUserRole === ROLES.ADMIN
+    if (!hasAccess) return
+
     void loadUsers()
-  }, [])
-
-  useEffect(() => {
-    if (session) {
-      void loadUsers()
-    }
-  }, [session])
-
-  useEffect(() => {
-    if (!session) return
-
-    const timeoutId = setTimeout(
-      () => {
-        // Trigger re-filter when search or role filter changes
-      },
-      search ? 300 : 0,
-    )
-
-    return () => clearTimeout(timeoutId)
-  }, [search, roleFilter, session])
+  }, [status, currentUserRole])
 
   const filteredUsers = useMemo(() => {
     return users
@@ -122,12 +143,14 @@ export default function SuperAdminUserManagement() {
 
     try {
       setError(null)
-      await fetch('/api/admin/users/' + targetUser.uid, {
+      const res = await fetch('/api/admin/users/' + targetUser.uid, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       })
+      if (!res.ok) throw new Error('Failed to update role')
       setUsers((prev) => prev.map((u) => (u.uid === targetUser.uid ? { ...u, role: newRole } : u)))
+      closeAllDropdowns()
     } catch (_e) {
       setError('Failed to update role')
     }
@@ -141,14 +164,16 @@ export default function SuperAdminUserManagement() {
 
     try {
       setError(null)
-      await fetch('/api/admin/users/' + targetUser.uid, {
+      const res = await fetch('/api/admin/users/' + targetUser.uid, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: newCategory }),
       })
+      if (!res.ok) throw new Error('Failed to update category')
       setUsers((prev) =>
         prev.map((u) => (u.uid === targetUser.uid ? { ...u, category: newCategory } : u)),
       )
+      closeAllDropdowns()
     } catch (_e) {
       setError('Failed to update category')
     }
@@ -162,11 +187,12 @@ export default function SuperAdminUserManagement() {
 
     try {
       setError(null)
-      await fetch('/api/admin/users/' + targetUser.uid, {
+      const res = await fetch('/api/admin/users/' + targetUser.uid, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus }),
       })
+      if (!res.ok) throw new Error('Failed to update status')
       setUsers((prev) =>
         prev.map((u) =>
           u.uid === targetUser.uid
@@ -313,144 +339,12 @@ export default function SuperAdminUserManagement() {
     )
   }
 
-  const CustomDropdown = ({
-    id,
-    value,
-    options,
-    onChange,
-    disabled = false,
-    placeholder = 'Select...',
-  }: {
-    id: string
-    value: string
-    options: Array<{ value: string; label: string }>
-    onChange: (value: string) => void
-    disabled?: boolean
-    placeholder?: string
-  }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
-    const [mounted, setMounted] = useState(false)
-    const buttonRef = useRef<HTMLButtonElement>(null)
-    const dropdownRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-      setMounted(true)
-    }, [])
-
-    useEffect(() => {
-      if (isOpen && buttonRef.current && mounted) {
-        const rect = buttonRef.current.getBoundingClientRect()
-        const viewportHeight = window.innerHeight
-        const dropdownHeight = Math.min(options.length * 40 + 16, 200)
-
-        const wouldOverflowBottom = rect.bottom + dropdownHeight > viewportHeight - 20
-
-        setPosition({
-          top: wouldOverflowBottom ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
-          left: rect.left,
-          width: rect.width,
-        })
-      }
-    }, [isOpen, options.length, mounted])
-
-    const toggleDropdown = (dropdownId: string) => {
-      setOpenDropdowns((prev) => {
-        const next = new Set(prev)
-        const shouldOpen = !next.has(dropdownId)
-
-        if (next.has(dropdownId)) {
-          next.delete(dropdownId)
-        } else {
-          next.clear()
-          next.add(dropdownId)
-        }
-
-        // Update isOpen after the state update completes
-        setTimeout(() => setIsOpen(shouldOpen), 0)
-
-        return next
-      })
-    }
-
-    const handleSelect = (selectedValue: string) => {
-      onChange(selectedValue)
-      setIsOpen(false)
-      setOpenDropdowns(new Set())
-    }
-
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current &&
-          !buttonRef.current.contains(event.target as Node)
-        ) {
-          setIsOpen(false)
-          setOpenDropdowns(new Set())
-        }
-      }
-
-      if (isOpen) {
-        document.addEventListener('mousedown', handleClickOutside)
-      }
-
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
-    }, [isOpen])
-
-    const dropdownContent = isOpen ? (
-      <div
-        ref={dropdownRef}
-        className="fixed z-[99999] rounded-xl border border-white/30 bg-white/80 backdrop-blur-xl shadow-xl overflow-hidden max-h-[200px] overflow-y-auto"
-        style={{
-          top: position.top + 'px',
-          left: position.left + 'px',
-          width: position.width + 'px',
-        }}
-      >
-        <div className="py-1">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleSelect(option.value)}
-              className="w-full px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-white/50 transition-colors duration-200 text-left"
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    ) : null
-
-    const chevronClass =
-      'h-4 w-4 text-primary transition-transform duration-200 ' + (isOpen ? 'rotate-180' : '')
-
-    return (
-      <>
-        <div className="relative">
-          <button
-            ref={buttonRef}
-            type="button"
-            onClick={() => !disabled && toggleDropdown(id)}
-            disabled={disabled}
-            className="w-full h-10 rounded-xl border border-[hsl(var(--primary))]/60 bg-primary/10 text-primary backdrop-blur-sm px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 appearance-none flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/15"
-          >
-            <span className="truncate">{value || placeholder}</span>
-            <ChevronDown className={chevronClass} />
-          </button>
-        </div>
-
-        {mounted && dropdownContent && createPortal(dropdownContent, document.body)}
-      </>
-    )
-  }
-
   if (status === 'loading') {
-    return <PermissionCheckingSplash />
+    return (
+      <div className="pt-2 px-2 md:px-3">
+        <UserManagementCompactSkeleton />
+      </div>
+    )
   }
 
   const canManage = currentUserRole === ROLES.SUPER_ADMIN || currentUserRole === ROLES.ADMIN
@@ -466,17 +360,25 @@ export default function SuperAdminUserManagement() {
 
   const spinClass = isLoading ? 'animate-spin' : ''
 
+  if (isLoading && users.length === 0) {
+    return (
+      <div className="pt-2 px-2 md:px-3">
+        <UserManagementCompactSkeleton />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="p-6 bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
+    <div className="pt-2 px-2 md:px-3 space-y-5">
+      <div className="p-4 bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 User Management
               </h1>
               <button
-                onClick={() => void loadUsers()}
+                onClick={() => void loadUsers(true)}
                 disabled={isLoading}
                 className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors duration-200 disabled:opacity-50"
                 title="Refresh users data"
@@ -489,7 +391,7 @@ export default function SuperAdminUserManagement() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 relative z-10">
             <input
               id="user-search"
               name="user-search"
@@ -513,6 +415,9 @@ export default function SuperAdminUserManagement() {
                     setRoleFilter(value)
                   }
                 }}
+                openDropdowns={openDropdowns}
+                onToggleDropdown={toggleDropdown}
+                onCloseAllDropdowns={closeAllDropdowns}
               />
             </div>
           </div>
@@ -527,10 +432,7 @@ export default function SuperAdminUserManagement() {
         </div>
       )}
 
-      {isLoading ? (
-        <UserManagementPageSkeleton />
-      ) : (
-        <>
+      <>
           <div className="hidden md:block overflow-x-auto rounded-xl border border-white/30 bg-white/20 backdrop-blur-md shadow-lg overflow-visible">
             <table className="min-w-full text-sm">
               <thead className="bg-[hsla(var(--primary)/0.10)] backdrop-blur-sm ring-1 ring-[hsl(var(--primary))/60]">
@@ -570,7 +472,9 @@ export default function SuperAdminUserManagement() {
                         user.role === ROLES.PARTNER ||
                         user.role === ROLES.AGENT))
 
-                  const availableCategories = ROLE_CATEGORIES[user.role] || []
+                  const normalizedRole = getNormalizedRole(user.role)
+                  const availableCategories =
+                    (normalizedRole ? ROLE_CATEGORIES[normalizedRole] : null) || allCategories
                   const isExpanded = expandedUsers.has(user.uid)
                   const isEditing = editingUser === user.uid
 
@@ -601,6 +505,9 @@ export default function SuperAdminUserManagement() {
                               options={roleOptions.map((r) => ({ value: r, label: r }))}
                               onChange={(value) => void handleRoleChange(user, value as RoleType)}
                               disabled={disableAdminActions}
+                              openDropdowns={openDropdowns}
+                              onToggleDropdown={toggleDropdown}
+                              onCloseAllDropdowns={closeAllDropdowns}
                             />
                           </div>
                         </td>
@@ -618,6 +525,10 @@ export default function SuperAdminUserManagement() {
                               ]}
                               onChange={(value) => void handleCategoryChange(user, value)}
                               disabled={disableAdminActions}
+                              placeholder="Select Category"
+                              openDropdowns={openDropdowns}
+                              onToggleDropdown={toggleDropdown}
+                              onCloseAllDropdowns={closeAllDropdowns}
                             />
                           </div>
                         </td>
@@ -774,7 +685,7 @@ export default function SuperAdminUserManagement() {
                     </Fragment>
                   )
                 })}
-                {filteredUsers.length === 0 && (
+                {filteredUsers.length === 0 && !isLoading && (
                   <tr>
                     <td
                       colSpan={7}
@@ -788,13 +699,12 @@ export default function SuperAdminUserManagement() {
             </table>
           </div>
 
-          {filteredUsers.length === 0 && (
+          {filteredUsers.length === 0 && !isLoading && (
             <div className="p-6 bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg text-center">
               <p className="text-gray-600 dark:text-gray-400">No users found.</p>
             </div>
           )}
-        </>
-      )}
+      </>
     </div>
   )
 }

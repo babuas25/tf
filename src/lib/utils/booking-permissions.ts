@@ -22,6 +22,10 @@ export interface BookingRecord {
   [key: string]: unknown
 }
 
+function normalizeIdentity(value: string | undefined): string {
+  return (value ?? '').trim().toLowerCase()
+}
+
 /**
  * Get booking permissions based on user role
  */
@@ -118,11 +122,16 @@ export function canViewBooking(
   }
 
   if (perms.canViewOwn) {
+    const userId = normalizeIdentity(user.id)
+    const userEmail = normalizeIdentity(user.email)
+    const createdBy = normalizeIdentity(booking.createdBy)
+    const createdByEmail = normalizeIdentity(booking.createdByEmail)
+
     // Check if user created this booking
     return (
-      booking.createdBy === user.id ||
-      booking.createdBy === user.email ||
-      booking.createdByEmail === user.email
+      (userId !== '' && createdBy === userId) ||
+      (userEmail !== '' && createdBy === userEmail) ||
+      (userEmail !== '' && createdByEmail === userEmail)
     )
   }
 

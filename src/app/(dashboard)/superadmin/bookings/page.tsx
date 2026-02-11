@@ -192,7 +192,7 @@ export default function BookingsPage() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Ref No, PNR, Name"
+                placeholder="Ref No, PNR, Name, Email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 pl-8 pr-3 text-xs rounded-md border border-gray-300 dark:border-white/20 bg-white dark:bg-neutral-950 shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary w-full"
@@ -217,8 +217,8 @@ export default function BookingsPage() {
         )}
       </div>
 
-      {/* Main content with padding-top to account for tab bars + filter bar */}
-      <main className="flex-1 pt-[calc(3.5rem+3.75rem+4rem+2rem)]">
+      {/* Main content */}
+      <main className="flex-1 w-full bg-gray-50/50 dark:bg-neutral-900/20">
         <div className="w-full max-w-[100vw] px-4 md:px-6 py-6">
           {activeTab === 0 && (
             <>
