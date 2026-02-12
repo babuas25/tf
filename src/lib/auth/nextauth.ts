@@ -89,7 +89,22 @@ export const authOptions = {
 
           return null
         } catch (error) {
-          console.error('Authentication error:', error)
+          const errorCode =
+            error && typeof error === 'object' && 'code' in error
+              ? String((error as { code?: unknown }).code)
+              : ''
+
+          const expectedCredentialErrors = new Set([
+            'auth/invalid-credential',
+            'auth/invalid-email',
+            'auth/user-not-found',
+            'auth/wrong-password',
+            'auth/invalid-login-credentials',
+          ])
+
+          if (!expectedCredentialErrors.has(errorCode)) {
+            console.error('Authentication error:', error)
+          }
           return null
         }
       },

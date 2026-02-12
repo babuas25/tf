@@ -84,6 +84,15 @@ function formatCreatedOn(iso: string): string {
   }
 }
 
+function normalizeOrderStatus(status?: string): string {
+  return status?.trim().toLowerCase() ?? ''
+}
+
+function isProcessingStatus(status?: string): boolean {
+  const normalized = normalizeOrderStatus(status)
+  return normalized === 'pending' || normalized === 'inprogress'
+}
+
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
@@ -150,6 +159,14 @@ export default function BookingOrderPage() {
   const printRef = useRef<HTMLDivElement>(null)
 
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+  const clearSuccessFlagFromUrl = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('success')) return
+    url.searchParams.delete('success')
+    router.replace(url.pathname + url.search)
+  }, [router])
 
   const loadOrder = useCallback(async () => {
     if (!orderRef) {
@@ -268,6 +285,20 @@ export default function BookingOrderPage() {
     }
   }, [orderRef]) // Only depend on orderRef to prevent infinite loops
 
+  // For instant purchase (Web fare), auto-refresh while supplier confirmation is processing.
+  useEffect(() => {
+    if (!orderRef || !order) return
+    const fareType = (order.orderItem?.[0]?.fareType ?? '').toLowerCase()
+    const shouldPoll = fareType === 'web' && isProcessingStatus(order.orderStatus)
+    if (!shouldPoll) return
+
+    const timer = window.setTimeout(() => {
+      void loadOrder()
+    }, 15000)
+
+    return () => window.clearTimeout(timer)
+  }, [orderRef, order, loadOrder])
+
   // Ensure booking history record exists even if the create-page save was interrupted.
   useEffect(() => {
     if (!orderRef || !order) return
@@ -295,20 +326,22 @@ export default function BookingOrderPage() {
   useEffect(() => {
     if (fromCreate && order && !loading && !successPopupShownRef.current) {
       successPopupShownRef.current = true
-      setShowSuccessPopup(true)
-      fireConfetti()
+      const status = normalizeOrderStatus(order.orderStatus)
+      const isCreateSuccessState = status === 'onhold' || status === 'confirmed'
+      if (isCreateSuccessState) {
+        setShowSuccessPopup(true)
+        fireConfetti()
+      } else {
+        clearSuccessFlagFromUrl()
+      }
     }
-  }, [fromCreate, order, loading])
+  }, [fromCreate, order, loading, clearSuccessFlagFromUrl])
 
   const closeSuccessPopup = useCallback(() => {
     setShowSuccessPopup(false)
     // Remove success param from URL so refresh won't show popup again
-    if (orderRef) {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('success')
-      router.replace(url.pathname + url.search)
-    }
-  }, [orderRef, router])
+    clearSuccessFlagFromUrl()
+  }, [clearSuccessFlagFromUrl])
 
   const handlePrint = useCallback(() => {
     if (typeof window === 'undefined' || !printRef.current) return
@@ -571,17 +604,26 @@ export default function BookingOrderPage() {
   )
   const airlinePNRDisplay = airlinePNRs.length > 0 ? airlinePNRs.join(', ') : commonPNR
 
-  // Payment: Unpaid for OnHold, Expired, Cancelled, Un-Confirmed; else Paid
+  const fareTypeLower = (firstItem?.fareType ?? '').toLowerCase()
+  const isInstantFareType = fareTypeLower === 'web'
+
   const displayStatus =
     order.orderStatus === 'OnHold' &&
     order.paymentTimeLimit &&
     isPaymentTimeLimitPast(order.paymentTimeLimit)
       ? 'Expired'
       : order.orderStatus
-  const isUnpaid = ['OnHold', 'Expired', 'Cancelled', 'Un-Confirmed', 'UnConfirmed'].some(
-    (s) => s.toLowerCase() === displayStatus.toLowerCase(),
-  )
-  const paymentStatus = isUnpaid ? 'Unpaid' : 'Paid'
+  const displayStatusLower = normalizeOrderStatus(displayStatus)
+  const rawOrderStatusLower = normalizeOrderStatus(order.orderStatus)
+  const isPaymentProcessing = isProcessingStatus(displayStatus)
+  const paymentStatus = displayStatusLower === 'confirmed' ? 'Paid' : isPaymentProcessing ? 'Processing' : 'Unpaid'
+  const isInstantIssuing = isInstantFareType && isProcessingStatus(displayStatus)
+  const isInstantIssueFailed =
+    isInstantFareType &&
+    (displayStatusLower === 'unknown' ||
+      displayStatusLower === 'unconfirmed' ||
+      displayStatusLower === 'un-confirmed')
+  const isInstantIssued = isInstantFareType && displayStatusLower === 'confirmed'
 
   const createdByName = session?.user?.name ?? null
 
@@ -618,9 +660,8 @@ export default function BookingOrderPage() {
   const fareDiffFormatted =
     fareDiff >= 0 ? `+${fareDiff.toLocaleString()}` : String(fareDiff.toLocaleString())
 
-  const orderStatusLower = order.orderStatus?.toLowerCase() ?? ''
-  const isOrderConfirmed = orderStatusLower === 'confirmed'
-  const isOrderInProgress = orderStatusLower === 'inprogress'
+  const isOrderConfirmed = rawOrderStatusLower === 'confirmed'
+  const isOrderInProgress = rawOrderStatusLower === 'inprogress'
   const showRefundChangeFlight = isOrderConfirmed || isOrderInProgress
   const refundChangeFlightDisabled = isOrderInProgress || actionLoading !== null
 
@@ -977,6 +1018,37 @@ export default function BookingOrderPage() {
                 </div>
               </div>
             </Card>
+
+            {isInstantIssuing && (
+              <Card className="border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <p
+                  className={`${GeistSans.className} text-sm font-medium text-amber-900 dark:text-amber-100`}
+                >
+                  Instant ticket issuance is in progress. This page auto-refreshes every 15 seconds
+                  until the supplier returns a final status.
+                </p>
+              </Card>
+            )}
+
+            {isInstantIssueFailed && (
+              <Card className="border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10">
+                <p className={`${GeistSans.className} text-sm font-medium text-red-900 dark:text-red-100`}>
+                  Instant ticket issuance was not completed. Please refresh and check status, or
+                  contact support with order reference{' '}
+                  <span className={GeistMono.className}>{order.orderReference}</span>.
+                </p>
+              </Card>
+            )}
+
+            {isInstantIssued && (
+              <Card className="border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-500/10">
+                <p
+                  className={`${GeistSans.className} text-sm font-medium text-green-900 dark:text-green-100`}
+                >
+                  Instant purchase completed. Your ticket is issued and confirmed.
+                </p>
+              </Card>
+            )}
 
             {/* 2. Passenger Information */}
             <Card>

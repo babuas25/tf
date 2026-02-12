@@ -615,6 +615,45 @@ select.tf-advanced-input option {
   cursor: pointer;
 }
 
+/* Hide native datalist dropdown indicator while keeping datalist suggestions. */
+.tf-no-datalist-arrow {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+  background-image: none;
+}
+
+.tf-no-datalist-arrow::-webkit-calendar-picker-indicator {
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+  -webkit-appearance: none;
+}
+
+.tf-no-datalist-arrow::-webkit-list-button {
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+input[list] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[list]::-webkit-calendar-picker-indicator,
+input[list]::-webkit-list-button {
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Remove native number spin controls to keep consistent themed +/- controls */
 .tf-advanced-number::-webkit-outer-spin-button,
 .tf-advanced-number::-webkit-inner-spin-button {

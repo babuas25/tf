@@ -310,7 +310,7 @@ export function BookingHistoryTable({
 
     return (
       <Badge
-        className="rounded-md px-2 py-0.5 text-[11px] font-semibold text-white tracking-wide"
+        className="rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
         style={{ backgroundColor: config.color }}
       >
         {config.label}
@@ -338,6 +338,10 @@ export function BookingHistoryTable({
     return `${dayName}, ${day} ${month} ${year}`
   }
 
+  const formatFare = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount)
+  }
+
   const SortableHeader = ({
     label,
     columnKey,
@@ -349,14 +353,14 @@ export function BookingHistoryTable({
   }) => (
     <th
       className={cn(
-        'text-left px-4 py-2.5 text-xs font-semibold tracking-tight border-b border-gray-200/80 dark:border-white/10',
+        'text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] border-b border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-300',
         className,
       )}
     >
       <button
         type="button"
         onClick={() => handleSort(columnKey)}
-        className="flex items-center gap-1 text-gray-900 dark:text-gray-100 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
+        className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
       >
         {label}
         {sortKey === columnKey ? (
@@ -373,9 +377,9 @@ export function BookingHistoryTable({
   )
 
   return (
-    <div className="w-full overflow-hidden">
+    <div className="w-full overflow-hidden text-gray-900 dark:text-gray-100">
       {renderFilterBarInTable && (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2 px-4 md:px-0 mb-4">
+        <div className="mb-4 flex flex-col gap-2 px-4 md:flex-row md:items-center md:justify-end md:px-0">
           <div className="relative flex-1 w-full md:max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
             <Input
@@ -383,7 +387,7 @@ export function BookingHistoryTable({
               placeholder="Ref No, PNR, Name, Email"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 pr-3 text-xs rounded-md border border-gray-300 dark:border-white/20 bg-white dark:bg-neutral-950 shadow-sm focus:ring-2 focus:ring-primary/30 focus:border-primary w-full"
+              className="h-9 w-full rounded-md border border-gray-300 bg-white pl-8 pr-3 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-white/20 dark:bg-neutral-950"
             />
           </div>
           <Button
@@ -391,7 +395,7 @@ export function BookingHistoryTable({
             size="sm"
             onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
             className={cn(
-              'h-8 gap-1.5 px-3 text-xs font-medium w-full md:w-auto',
+              'h-9 w-full gap-1.5 px-3 text-sm font-medium md:w-auto',
               showAdvancedFilter
                 ? 'bg-primary/10 text-primary border-primary/40 hover:bg-primary/15'
                 : 'bg-white dark:bg-neutral-950 border border-gray-300 dark:border-white/20',
@@ -408,12 +412,12 @@ export function BookingHistoryTable({
 
       {/* Advanced Filter Panel */}
       {showAdvancedFilter && (
-        <div className="mb-4 mx-4 md:mx-0 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-b from-primary/[0.08] via-white to-white dark:from-primary/[0.12] dark:via-neutral-950 dark:to-neutral-950 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 px-4 py-3 border-b border-primary/20">
+        <div className="mx-4 mb-4 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-b from-primary/[0.08] via-white to-white shadow-sm dark:from-primary/[0.12] dark:via-neutral-950 dark:to-neutral-950 md:mx-0">
+          <div className="flex flex-col gap-2 border-b border-primary/20 px-4 py-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold text-primary">Filters By</h3>
-              <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <h3 className="text-sm font-semibold tracking-tight text-primary">Filters By</h3>
+              <span className="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-primary">
                 {activeAdvancedFilterCount} applied
               </span>
             </div>
@@ -625,7 +629,7 @@ export function BookingHistoryTable({
           </div>
 
           <div className="px-4 py-2 border-t border-primary/20">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Showing {sortedBookings.length} of {bookings.length} bookings
             </p>
           </div>
@@ -633,10 +637,10 @@ export function BookingHistoryTable({
       )}
 
       {/* Desktop Table View - with horizontal scroll */}
-      <div className="hidden md:block w-full overflow-auto bg-white dark:bg-neutral-950 rounded-lg border border-gray-200/80 dark:border-white/10 shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-100 dark:bg-white/5">
+      <div className="hidden w-full overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm dark:border-white/10 dark:bg-neutral-950 md:block">
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full min-w-[1180px] text-[13px]">
+            <thead className="bg-gray-100/90 dark:bg-white/5">
               <tr>
                 <SortableHeader label="Create Date" columnKey="createDate" />
                 <SortableHeader label="Status" columnKey="status" />
@@ -651,7 +655,7 @@ export function BookingHistoryTable({
                 <SortableHeader label="Created By" columnKey="createdBy" />
                 <SortableHeader label="Ref No" columnKey="referenceNo" />
                 {showActionColumn && (
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold tracking-tight border-b border-gray-200/80 dark:border-white/10">
+                  <th className="border-b border-gray-200/80 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700 dark:border-white/10 dark:text-gray-300">
                     Actions
                   </th>
                 )}
@@ -662,7 +666,7 @@ export function BookingHistoryTable({
                 <tr>
                   <td
                     colSpan={showActionColumn ? 14 : 13}
-                    className="px-4 py-8 text-center text-xs text-gray-500 dark:text-gray-400"
+                    className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     No bookings found
                   </td>
@@ -671,45 +675,45 @@ export function BookingHistoryTable({
                 sortedBookings.map((booking) => (
                   <tr
                     key={booking.referenceNo}
-                    className="border-b border-gray-200/80 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    className="border-b border-gray-200/80 align-middle transition-colors hover:bg-gray-50/80 dark:border-white/10 dark:hover:bg-white/5"
                   >
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {formatIssuedDate(booking.createDate)}
                     </td>
-                    <td className="px-4 py-2.5">{getStatusBadge(booking.status)}</td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3">{getStatusBadge(booking.status)}</td>
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {booking.pnr || '-'}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs font-medium leading-snug">
+                    <td className="max-w-[16rem] px-4 py-3 text-[13px] font-medium leading-5 text-gray-900 dark:text-gray-100">
                       {booking.name}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {formatFlyDate(booking.flyDate)}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                       {booking.airline}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs font-semibold tabular-nums leading-snug">
-                      {booking.fare.toString()}
+                    <td className="px-4 py-3 text-[13px] font-semibold tabular-nums leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                      {formatFare(booking.fare)}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {formatIssuedDate(booking.issued)}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {booking.passengerType}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="max-w-[14rem] px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100 break-words">
                       {booking.route}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 text-xs leading-snug">
+                    <td className="px-4 py-3 text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                       {booking.createdBy}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-3">
                       <button
                         type="button"
                         onClick={() => onReferenceClick?.(booking.referenceNo)}
                         disabled={!!refLoading}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold underline text-primary hover:no-underline focus:outline-none focus:ring-2 focus:ring-primary/20 rounded disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                        className="inline-flex items-center gap-1.5 rounded text-[12px] font-semibold tracking-wide text-primary underline focus:outline-none focus:ring-2 focus:ring-primary/20 hover:no-underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
                       >
                         {refLoading === booking.referenceNo ? (
                           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
@@ -718,7 +722,7 @@ export function BookingHistoryTable({
                       </button>
                     </td>
                     {showActionColumn && (
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-3">
                         {currentUser &&
                           (() => {
                             const actions = getAvailableBookingActions(
@@ -746,7 +750,7 @@ export function BookingHistoryTable({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onBookingAction?.('view', booking)}
-                                    className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                                    className="h-7 w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
                                     title="View booking"
                                   >
                                     <Eye className="h-3 w-3" />
@@ -757,7 +761,7 @@ export function BookingHistoryTable({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onBookingAction?.('refresh', booking)}
-                                    className="h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                                    className="h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
                                     title="Refresh booking"
                                   >
                                     <RefreshCw className="h-3 w-3" />
@@ -768,7 +772,7 @@ export function BookingHistoryTable({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onBookingAction?.('edit', booking)}
-                                    className="h-6 w-6 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
+                                    className="h-7 w-7 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
                                     title="Edit booking"
                                   >
                                     <Edit className="h-3 w-3" />
@@ -779,7 +783,7 @@ export function BookingHistoryTable({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onBookingAction?.('delete', booking)}
-                                    className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                                    className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                                     title="Delete booking"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -799,125 +803,135 @@ export function BookingHistoryTable({
       </div>
 
       {/* Mobile Card View - full width cards */}
-      <div className="md:hidden w-full space-y-3">
+      <div className="w-full space-y-3.5 md:hidden">
         {sortedBookings.length === 0 ? (
-          <div className="bg-white dark:bg-neutral-950 rounded-lg border border-gray-200/80 dark:border-white/10 p-8 text-center text-xs text-gray-500 dark:text-gray-400">
+          <div className="rounded-xl border border-gray-200/80 bg-white p-8 text-center text-sm text-gray-500 shadow-sm dark:border-white/10 dark:bg-neutral-950 dark:text-gray-400">
             No bookings found
           </div>
         ) : (
           sortedBookings.map((booking) => (
             <div
               key={booking.referenceNo}
-              className="bg-white dark:bg-neutral-950 border border-gray-200/80 dark:border-white/10 rounded-lg p-4 space-y-2.5 shadow-sm"
+              className="space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-neutral-950"
             >
               {/* Create Date */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Create Date
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                   {formatIssuedDate(booking.createDate)}
                 </span>
               </div>
 
               {/* Status */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Status</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
+                  Status
+                </span>
                 <div>{getStatusBadge(booking.status)}</div>
               </div>
 
               {/* PNR's */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   PNR's
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100 break-words">
                   {booking.pnr || '-'}
                 </span>
               </div>
 
               {/* Name */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Name
                 </span>
-                <span className="text-xs font-medium text-gray-900 dark:text-gray-100 text-right max-w-[60%]">
+                <span className="max-w-[65%] text-right text-[13px] font-medium leading-5 text-gray-900 dark:text-gray-100 break-words">
                   {booking.name}
                 </span>
               </div>
 
               {/* Fly Date */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Fly Date
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                   {formatFlyDate(booking.flyDate)}
                 </span>
               </div>
 
               {/* Airline */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Airline
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100">{booking.airline}</span>
+                <span className="text-[13px] leading-5 text-gray-900 dark:text-gray-100">
+                  {booking.airline}
+                </span>
               </div>
 
               {/* Fare */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Fare</span>
-                <span className="text-xs font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                  {booking.fare.toString()}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
+                  Fare
+                </span>
+                <span className="text-[13px] font-semibold tabular-nums leading-5 text-gray-900 dark:text-gray-100">
+                  {formatFare(booking.fare)}
                 </span>
               </div>
 
               {/* Issued */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Issued</span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
+                  Issued
+                </span>
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                   {formatIssuedDate(booking.issued)}
                 </span>
               </div>
 
               {/* Passenger Type */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Passenger Type
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                   {booking.passengerType}
                 </span>
               </div>
 
               {/* Route */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Route
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right max-w-[60%]">
+                <span className="max-w-[65%] text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100 break-words">
                   {booking.route}
                 </span>
               </div>
 
               {/* Created By */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                   Created By
                 </span>
-                <span className="text-xs text-gray-900 dark:text-gray-100 text-right">
+                <span className="text-right text-[13px] leading-5 text-gray-900 dark:text-gray-100">
                   {booking.createdBy}
                 </span>
               </div>
 
               {/* Ref No */}
-              <div className="flex justify-between items-center gap-2 pt-2.5 border-t border-gray-200/80 dark:border-white/10">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Ref No</span>
+              <div className="flex items-center justify-between gap-2 border-t border-gray-200/80 pt-2.5 dark:border-white/10">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
+                  Ref No
+                </span>
                 <button
                   type="button"
                   onClick={() => onReferenceClick?.(booking.referenceNo)}
                   disabled={!!refLoading}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold underline text-primary hover:no-underline focus:outline-none focus:ring-2 focus:ring-primary/20 rounded disabled:opacity-60 disabled:cursor-not-allowed disabled:no-underline"
+                  className="inline-flex items-center gap-1.5 rounded text-[12px] font-semibold tracking-wide text-primary underline focus:outline-none focus:ring-2 focus:ring-primary/20 hover:no-underline disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline"
                 >
                   {refLoading === booking.referenceNo ? (
                     <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
@@ -949,8 +963,8 @@ export function BookingHistoryTable({
                   }
 
                   return (
-                    <div className="flex justify-between items-center gap-2 pt-2.5 border-t border-gray-200/80 dark:border-white/10">
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-between gap-2 border-t border-gray-200/80 pt-2.5 dark:border-white/10">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gray-500 dark:text-gray-400">
                         Actions
                       </span>
                       <div className="flex items-center gap-1">
@@ -959,7 +973,7 @@ export function BookingHistoryTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => onBookingAction?.('view', booking)}
-                            className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                            className="h-7 w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
                             title="View booking"
                           >
                             <Eye className="h-3 w-3" />
@@ -970,7 +984,7 @@ export function BookingHistoryTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => onBookingAction?.('refresh', booking)}
-                            className="h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                            className="h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
                             title="Refresh booking"
                           >
                             <RefreshCw className="h-3 w-3" />
@@ -981,7 +995,7 @@ export function BookingHistoryTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => onBookingAction?.('edit', booking)}
-                            className="h-6 w-6 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
+                            className="h-7 w-7 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
                             title="Edit booking"
                           >
                             <Edit className="h-3 w-3" />
@@ -992,7 +1006,7 @@ export function BookingHistoryTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => onBookingAction?.('delete', booking)}
-                            className="h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                             title="Delete booking"
                           >
                             <Trash2 className="h-3 w-3" />

@@ -15,6 +15,14 @@ const SSR_CODES: Record<string, { name: string; description: string; icon: React
   MAAS: { name: 'Meet & Assist', description: 'Airport meet and assist service', icon: <Award className="w-5 h-5" /> },
 }
 
+const TRAVELLER_SYNC_STATE_KEY = 'tripfeels-traveller-sync-state'
+
+interface TravellerSyncState {
+  traceId: string
+  offerId: string
+  travellerIdsByPassenger: Record<string, string>
+}
+
 interface PassengerData {
   firstName: string
   lastName: string
@@ -68,6 +76,8 @@ export default function SSRPage() {
   
   const [loading, setLoading] = useState(true)
   const [error] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [isSyncingTravellers, setIsSyncingTravellers] = useState(false)
   
   // Data from sessionStorage
   const [passengerData, setPassengerData] = useState<Record<number, PassengerData>>({})
@@ -92,6 +102,73 @@ export default function SSRPage() {
   
   const traceId = searchParams.get('traceId')
   const offerId = searchParams.get('offerId')
+
+  const readTravellerSyncState = (): TravellerSyncState | null => {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = sessionStorage.getItem(TRAVELLER_SYNC_STATE_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object') return null
+      const obj = parsed as Record<string, unknown>
+      const syncedTraceId = typeof obj.traceId === 'string' ? obj.traceId : ''
+      const syncedOfferId = typeof obj.offerId === 'string' ? obj.offerId : ''
+      const ids =
+        obj.travellerIdsByPassenger && typeof obj.travellerIdsByPassenger === 'object'
+          ? (obj.travellerIdsByPassenger as Record<string, unknown>)
+          : {}
+
+      const travellerIdsByPassenger: Record<string, string> = {}
+      Object.entries(ids).forEach(([key, value]) => {
+        if (typeof value === 'string' && value.trim()) {
+          travellerIdsByPassenger[key] = value
+        }
+      })
+
+      return {
+        traceId: syncedTraceId,
+        offerId: syncedOfferId,
+        travellerIdsByPassenger,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const syncTravellerSsrData = async () => {
+    const syncState = readTravellerSyncState()
+    if (!syncState) return
+    if (syncState.traceId !== (traceId || '') || syncState.offerId !== (offerId || '')) return
+
+    const entries = Object.entries(syncState.travellerIdsByPassenger)
+    for (const [passengerIndex, travellerId] of entries) {
+      const selectedForPassenger = selectedSSR[Number(passengerIndex)] || []
+      const ssrCodes = selectedForPassenger.map((item) => ({
+        code: item.code,
+        ...(item.remark ? { remark: item.remark } : {}),
+      }))
+      const fqtv = selectedForPassenger.find((item) => item.code === 'FQTV' && item.ffNumber?.trim())
+
+      const payload: Record<string, unknown> = {
+        ssrCodes,
+      }
+      if (fqtv?.ffNumber) {
+        payload.loyaltyAirlineCode = 'FQTV'
+        payload.loyaltyAccountNumber = fqtv.ffNumber.trim()
+      }
+
+      const response = await fetch(`/api/travellers/${travellerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const err = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(err?.error || 'Failed to sync SSR data into travellers')
+      }
+    }
+  }
 
   // Fetch seat availability
   const fetchSeatAvailability = useCallback(async () => {
@@ -276,15 +353,25 @@ export default function SSRPage() {
     })
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     // Store SSR selections in sessionStorage
     sessionStorage.setItem('selectedSSR', JSON.stringify(selectedSSR))
     sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats))
     sessionStorage.setItem('selectedMeals', JSON.stringify(selectedMeals))
     sessionStorage.setItem('selectedBaggage', JSON.stringify(selectedBaggage))
-    
-    // Navigate to Review & Book page
-    router.push(`/review-book?traceId=${traceId}&offerId=${offerId}`)
+
+    try {
+      setSyncError(null)
+      setIsSyncingTravellers(true)
+      await syncTravellerSsrData()
+      // Navigate to Review & Book page
+      router.push(`/review-book?traceId=${traceId}&offerId=${offerId}`)
+    } catch (syncError) {
+      console.error('Failed to sync traveller SSR data:', syncError)
+      setSyncError('Failed to save SSR data into Travellers Management. Please try again.')
+    } finally {
+      setIsSyncingTravellers(false)
+    }
   }
 
   const handleBack = () => {
@@ -328,7 +415,7 @@ export default function SSRPage() {
     <div className="w-full">
       <div className="max-w-5xl mx-auto">
         {/* Progress Stepper */}
-        <div className="mb-8">
+        <div className="mb-5 sm:mb-6">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
             {/* Step 1 - Completed */}
             <div className="flex flex-col items-center flex-1">
@@ -360,7 +447,7 @@ export default function SSRPage() {
 
         {/* Main Content */}
         <div className="bg-white dark:bg-neutral-950 border border-gray-200/80 dark:border-white/10 rounded-lg shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Special Service Requests (SSR)</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Select optional services for your journey. These services are subject to availability.
@@ -369,11 +456,11 @@ export default function SSRPage() {
 
           {/* Available SSR Info */}
           {availableSSR.length > 0 && (
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
+            <div className="p-3 bg-blue-50/80 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
                     <strong>Available SSR for this flight:</strong> {availableSSR.map(code => SSR_CODES[code]?.name || code).join(', ')}
                   </p>
                 </div>
@@ -392,17 +479,17 @@ export default function SSRPage() {
                   {/* Passenger Header */}
                   <button
                     onClick={() => setExpandedPassenger(isExpanded ? null : passenger.index)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="w-full px-4 sm:px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-3 flex-wrap text-left">
+                      <span className="text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
                         {passenger.firstName} {passenger.lastName}
                       </span>
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded">
+                      <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-semibold rounded-full">
                         {passenger.paxType}
                       </span>
                       {passengerSSR.length > 0 && (
-                        <span className="text-xs text-green-600 dark:text-green-400">
+                        <span className="text-[11px] font-medium text-green-600 dark:text-green-400">
                           {passengerSSR.length} SSR selected
                         </span>
                       )}
@@ -412,11 +499,11 @@ export default function SSRPage() {
 
                   {/* SSR Options */}
                   {isExpanded && (
-                    <div className="px-6 pb-6 space-y-4">
+                    <div className="px-4 sm:px-5 pb-4 pt-1.5 space-y-3">
                       {/* SSR Selection */}
                       {availableSSR.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Special Services</h4>
+                        <div className="rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3">
+                          <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-3">Special Services</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {availableSSR.map((code) => {
                               const ssr = SSR_CODES[code]
@@ -426,10 +513,10 @@ export default function SSRPage() {
                               return (
                                 <div
                                   key={code}
-                                  className={`p-4 rounded-lg border-2 transition-colors cursor-pointer ${
+                                  className={`p-3 rounded-lg border transition-colors cursor-pointer ${
                                     isSelected
-                                      ? 'border-primary bg-primary/5'
-                                      : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                      ? 'border-primary/70 bg-primary/5'
+                                      : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 bg-white/70 dark:bg-black/20'
                                   }`}
                                   onClick={() => toggleSSR(passenger.index, code)}
                                 >
@@ -439,7 +526,7 @@ export default function SSRPage() {
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex items-center justify-between">
-                                        <h5 className="font-medium text-gray-900 dark:text-white">
+                                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white">
                                           {ssr?.name || code}
                                         </h5>
                                         {isSelected && <CheckCircle2 className="w-5 h-5 text-primary" />}
@@ -482,12 +569,12 @@ export default function SSRPage() {
 
                       {/* Seat Selection */}
                       {seatsAvailable && seatData.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3">
+                          <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                             <Armchair className="w-4 h-4" /> Seat Selection
                           </h4>
                           <select
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="w-full h-10 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-black/20 text-sm font-medium text-gray-900 dark:text-white"
                             value={selectedSeats[passenger.index] || ''}
                             onChange={(e) => setSelectedSeats({ ...selectedSeats, [passenger.index]: e.target.value })}
                           >
@@ -503,13 +590,13 @@ export default function SSRPage() {
 
                       {/* Meal Selection */}
                       {serviceListAvailable && mealData.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3">
+                          <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                             <UtensilsCrossed className="w-4 h-4" /> Meal Options
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {mealData.map((meal) => (
-                              <label key={meal.serviceId} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <label key={meal.serviceId} className="flex items-center gap-3 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white/70 dark:bg-black/20">
                                 <input
                                   type="checkbox"
                                   checked={(selectedMeals[passenger.index] || []).includes(meal.serviceId)}
@@ -524,7 +611,7 @@ export default function SSRPage() {
                                   className="accent-primary"
                                 />
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">{meal.mealName}</p>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{meal.mealName}</p>
                                   <p className="text-xs text-gray-500 dark:text-gray-400">{meal.description}</p>
                                 </div>
                                 <span className="text-sm font-semibold text-primary">{meal.currency} {meal.amount}</span>
@@ -536,13 +623,13 @@ export default function SSRPage() {
 
                       {/* Baggage Selection */}
                       {serviceListAvailable && baggageData.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3">
+                          <h4 className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                             <Briefcase className="w-4 h-4" /> Extra Baggage
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {baggageData.map((bag) => (
-                              <label key={bag.serviceId} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <label key={bag.serviceId} className="flex items-center gap-3 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white/70 dark:bg-black/20">
                                 <input
                                   type="checkbox"
                                   checked={(selectedBaggage[passenger.index] || []).includes(bag.serviceId)}
@@ -557,7 +644,7 @@ export default function SSRPage() {
                                   className="accent-primary"
                                 />
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">{bag.description}</p>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{bag.description}</p>
                                 </div>
                                 <span className="text-sm font-semibold text-primary">{bag.currency} {bag.amount}</span>
                               </label>
@@ -581,19 +668,27 @@ export default function SSRPage() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex gap-4 mt-6">
+        {syncError && (
+          <div className="mt-4 mb-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+            {syncError}
+          </div>
+        )}
+        <div className="flex gap-3 mt-4">
           <button
             onClick={handleBack}
-            className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-semibold flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-semibold flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-5 h-5" />
             Back
           </button>
           <button
-            onClick={handleContinue}
-            className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-semibold flex items-center justify-center gap-2"
+            onClick={() => {
+              void handleContinue()
+            }}
+            disabled={isSyncingTravellers}
+            className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Review & Book
+            {isSyncingTravellers ? 'Saving Travellers...' : 'Review & Book'}
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

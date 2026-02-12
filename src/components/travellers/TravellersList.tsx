@@ -115,7 +115,7 @@ const getRoleDescription = (role: string) => {
     case 'SuperAdmin':
       return 'Manage all travellers in the system. You can view, add, edit, and delete any traveller.'
     case 'Admin':
-      return 'Manage all travellers in the system. You can view, add, and edit any traveller.'
+      return 'Manage all travellers in the system. You can view, add, edit, and delete any traveller.'
     case 'Staff':
     case 'Agent':
     case 'Partner':
@@ -451,7 +451,11 @@ export function TravellersList({
                           <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">SSR</p>
                           <div className="flex flex-wrap gap-1.5">
                             {traveller.ssrCodes.map((code) => (
-                              <Badge key={code} variant="outline" className="text-xs">
+                              <Badge
+                                key={code}
+                                variant="outline"
+                                className="text-xs text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-500 bg-white/70 dark:bg-white/10"
+                              >
                                 {code}
                                 {traveller.ssrRemarks[code] && `: ${traveller.ssrRemarks[code]}`}
                               </Badge>

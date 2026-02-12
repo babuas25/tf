@@ -3,8 +3,9 @@
 import { LogOut, Menu, ChevronDown, UserCircle, Sun, Moon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,8 @@ export function Header({
   onMobileMenuToggle,
 }: HeaderProps) {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { theme, setTheme } = useTheme()
   const { logoType, textLogo, logoImage } = useThemeContext()
   const themeColors = useDynamicThemeColors()
@@ -38,6 +41,11 @@ export function Header({
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false)
 
   const userRole = (session?.user as { role?: string } | undefined)?.role
+  const signOutCallbackUrl = useMemo(() => {
+    const qs = searchParams.toString()
+    const currentPath = `${pathname}${qs ? `?${qs}` : ''}`
+    return `/auth?callbackUrl=${encodeURIComponent(currentPath)}`
+  }, [pathname, searchParams])
 
   return (
     <header
@@ -153,7 +161,7 @@ export function Header({
                   <button
                     onClick={() => {
                       setIsUserDropdownOpen(false)
-                      void signOut({ callbackUrl: '/' })
+                      void signOut({ callbackUrl: signOutCallbackUrl })
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-gray-900 dark:hover:text-white transition-colors"
                   >

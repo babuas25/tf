@@ -45,6 +45,7 @@ interface PassengerData {
 interface OfferDetails {
   currency: string
   totalPrice: number
+  fareType?: string
   paxSegmentList: Array<{
     paxSegment: {
       departure: {
@@ -261,6 +262,43 @@ export default function ReviewBookPage() {
       date: date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }),
       time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
     }
+  }
+
+  const formatDisplayDate = (dateValue?: string) => {
+    if (!dateValue) return '-'
+
+    const dateOnly = dateValue.includes('T') ? (dateValue.split('T')[0] ?? '') : dateValue
+    if (!dateOnly) return '-'
+    const [yearPart, monthPart, dayPart] = dateOnly.split('-')
+    const year = Number(yearPart)
+    const month = Number(monthPart)
+    const day = Number(dayPart)
+
+    if (
+      Number.isFinite(year) &&
+      Number.isFinite(month) &&
+      Number.isFinite(day) &&
+      year > 0 &&
+      month >= 1 &&
+      month <= 12 &&
+      day >= 1 &&
+      day <= 31
+    ) {
+      return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })
+    }
+
+    const parsed = new Date(dateValue)
+    if (Number.isNaN(parsed.getTime())) return dateValue
+    return parsed.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
   }
 
   // Build paxList for API
@@ -566,6 +604,7 @@ export default function ReviewBookPage() {
         sessionStorage.removeItem('seatsAvailable')
         sessionStorage.removeItem('serviceListAvailable')
         sessionStorage.removeItem('passportRequired')
+        sessionStorage.removeItem('tripfeels-traveller-sync-state')
         // Redirect to booking-order with success flag for popup + confetti
         if (createdRef) {
           console.log('Redirecting to booking-order with orderRef:', createdRef)
@@ -608,6 +647,7 @@ export default function ReviewBookPage() {
     Object.values(selectedSeats).filter(Boolean).length +
     Object.values(selectedMeals).reduce((sum, arr) => sum + arr.length, 0) +
     Object.values(selectedBaggage).reduce((sum, arr) => sum + arr.length, 0)
+  const isInstantPurchase = (offerDetails?.fareType ?? '').toLowerCase() === 'web'
 
   if (status === 'loading' || loading) {
     return (
@@ -719,6 +759,23 @@ export default function ReviewBookPage() {
           </div>
         )}
 
+        {isInstantPurchase && (
+          <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-800 dark:text-blue-200">
+                  Instant purchase required
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  This fare type is <span className="font-semibold">Web</span>. After you
+                  continue, the system will try to issue the ticket immediately.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-4">
@@ -815,42 +872,85 @@ export default function ReviewBookPage() {
 
               {expandedSections.passengers && (
                 <div className="px-6 pb-4 space-y-3">
-                  {passengers.map((passenger, idx) => (
-                    <div key={idx} className="p-4 bg-gray-50 dark:bg-white/5 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {passenger.firstName} {passenger.lastName}
-                          </span>
-                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded">
-                            {passenger.paxType}
-                          </span>
+                  {passengers.map((passenger, idx) => {
+                    const fullName = [passenger.firstName, passenger.lastName]
+                      .filter(Boolean)
+                      .join(' ')
+                    const showPassport = passportRequired && Boolean(passenger.passportNumber)
+
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-4 sm:p-5"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200/80 dark:border-white/10 pb-3">
+                          <div>
+                            <p className="text-base sm:text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
+                              {fullName || '-'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              Passenger {idx + 1}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                              {passenger.paxType}
+                            </span>
+                            {passenger.gender && (
+                              <span className="px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-white/15 text-gray-700 dark:text-gray-300">
+                                {passenger.gender}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {passenger.gender}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <Calendar className="w-4 h-4" />
-                          <span>{passenger.dob}</span>
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400">
-                          Nationality: {passenger.nationality}
-                        </div>
-                        {passportRequired && passenger.passportNumber && (
-                          <>
-                            <div className="text-gray-600 dark:text-gray-400">
-                              Passport: {passenger.passportNumber}
+
+                        <div
+                          className={`mt-4 grid grid-cols-1 sm:grid-cols-2 ${showPassport ? 'lg:grid-cols-4' : ''} gap-3`}
+                        >
+                          <div className="rounded-lg border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 p-3">
+                            <p className="text-[11px] uppercase tracking-wide font-medium text-gray-500 dark:text-gray-400">
+                              Date of Birth
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-primary" />
+                              {formatDisplayDate(passenger.dob)}
+                            </p>
+                          </div>
+
+                          <div className="rounded-lg border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 p-3">
+                            <p className="text-[11px] uppercase tracking-wide font-medium text-gray-500 dark:text-gray-400">
+                              Nationality
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                              {passenger.nationality || '-'}
+                            </p>
+                          </div>
+
+                          {showPassport && (
+                            <div className="rounded-lg border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 p-3">
+                              <p className="text-[11px] uppercase tracking-wide font-medium text-gray-500 dark:text-gray-400">
+                                Passport Number
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                {passenger.passportNumber}
+                              </p>
                             </div>
-                            <div className="text-gray-600 dark:text-gray-400">
-                              Expiry: {passenger.passportExpiry}
+                          )}
+
+                          {showPassport && (
+                            <div className="rounded-lg border border-gray-200/70 dark:border-white/10 bg-white/70 dark:bg-black/20 p-3">
+                              <p className="text-[11px] uppercase tracking-wide font-medium text-gray-500 dark:text-gray-400">
+                                Passport Expiry
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                {formatDisplayDate(passenger.passportExpiry)}
+                              </p>
                             </div>
-                          </>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -957,97 +1057,109 @@ export default function ReviewBookPage() {
               </button>
 
               {expandedSections.contact && (
-                <div className="px-6 pb-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        onBlur={(e) => {
-                          const v = e.target.value.trim()
-                          if (v)
-                            setRecentEmails((prev) =>
-                              saveRecentToStorage(RECENT_EMAILS_KEY, v, prev),
-                            )
-                        }}
-                        placeholder="example@email.com"
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary h-10"
-                        style={{
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'textfield',
-                          appearance: 'none',
-                        }}
-                        required
-                      />
-                      {contactEmail && (
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none" />
+                <div className="px-6 pb-5">
+                  <div className="rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-4 sm:p-5 space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2 border-b border-gray-200/80 dark:border-white/10 pb-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Primary Booking Contact
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Airline updates and booking notifications will be sent here.
+                        </p>
+                      </div>
+                      {(!contactEmail || !contactPhone) && (
+                        <span className="inline-flex items-center rounded-full border border-red-200 dark:border-red-800/70 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-300">
+                          Required fields
+                        </span>
                       )}
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Phone Number *
-                    </label>
-                    <div className="flex gap-2">
-                      {contactPhone ? (
-                        // Show static display when phone is filled
-                        <div className="w-32 px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm flex items-center justify-between h-10">
-                          <div className="flex items-center gap-2">
-                            {PHONE_COUNTRIES.find((c) => c.phoneCode === countryCode) && (
-                              <ReactCountryFlag
-                                countryCode={
-                                  PHONE_COUNTRIES.find((c) => c.phoneCode === countryCode)?.code ||
-                                  'BD'
-                                }
-                                svg
-                                style={{ width: '1.25rem', height: '1.25rem' }}
-                              />
-                            )}
-                            <span className="text-sm">{countryCode}</span>
-                          </div>
-                          <ChevronDown className="w-4 h-4 text-gray-400 transition-transform" />
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                          Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <input
+                            type="email"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            onBlur={(e) => {
+                              const v = e.target.value.trim()
+                              if (v)
+                                setRecentEmails((prev) =>
+                                  saveRecentToStorage(RECENT_EMAILS_KEY, v, prev),
+                                )
+                            }}
+                            placeholder="example@email.com"
+                            className="w-full h-11 pl-10 pr-3 border border-gray-200/90 dark:border-white/10 rounded-xl bg-white/80 dark:bg-black/20 text-[15px] font-medium text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent"
+                            style={{
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'textfield',
+                              appearance: 'none',
+                            }}
+                            required
+                          />
                         </div>
-                      ) : (
-                        <CountrySelector
-                          value={countryCode}
-                          onChange={(value) => setCountryCode(value)}
-                          countries={PHONE_COUNTRIES}
-                          placeholder="Code"
-                          type="phone"
-                          className="w-32"
-                        />
-                      )}
-                      <div className="relative flex-1">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={contactPhone}
-                          onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, ''))}
-                          onBlur={(e) => {
-                            const v = e.target.value.trim()
-                            if (v)
-                              setRecentPhones((prev) =>
-                                saveRecentToStorage(RECENT_PHONES_KEY, v, prev),
-                              )
-                          }}
-                          placeholder="01XXXXXXXXX"
-                          className="w-full pl-10 pr-10 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary h-10"
-                          style={{
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'textfield',
-                            appearance: 'none',
-                          }}
-                          required
-                        />
-                        {contactPhone && (
-                          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none" />
-                        )}
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <div className="flex gap-2">
+                          {contactPhone ? (
+                            <div className="w-32 px-3 h-11 border border-gray-200/90 dark:border-white/10 rounded-xl bg-white/80 dark:bg-black/20 text-gray-900 dark:text-white text-sm flex items-center">
+                              <div className="flex items-center gap-2">
+                                {PHONE_COUNTRIES.find((c) => c.phoneCode === countryCode) && (
+                                  <ReactCountryFlag
+                                    countryCode={
+                                      PHONE_COUNTRIES.find((c) => c.phoneCode === countryCode)
+                                        ?.code || 'BD'
+                                    }
+                                    svg
+                                    style={{ width: '1.25rem', height: '1.25rem' }}
+                                  />
+                                )}
+                                <span className="text-sm font-medium">{countryCode}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <CountrySelector
+                              value={countryCode}
+                              onChange={(value) => setCountryCode(value)}
+                              countries={PHONE_COUNTRIES}
+                              placeholder="Code"
+                              type="phone"
+                              className="w-32"
+                            />
+                          )}
+                          <div className="relative flex-1">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                              type="tel"
+                              value={contactPhone}
+                              onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, ''))}
+                              onBlur={(e) => {
+                                const v = e.target.value.trim()
+                                if (v)
+                                  setRecentPhones((prev) =>
+                                    saveRecentToStorage(RECENT_PHONES_KEY, v, prev),
+                                  )
+                              }}
+                              placeholder="01XXXXXXXXX"
+                              className="w-full h-11 pl-10 pr-3 border border-gray-200/90 dark:border-white/10 rounded-xl bg-white/80 dark:bg-black/20 text-[15px] font-medium text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent"
+                              style={{
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'textfield',
+                                appearance: 'none',
+                              }}
+                              required
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1113,7 +1225,7 @@ export default function ReviewBookPage() {
                   ) : (
                     <>
                       <CheckCircle2 className="w-5 h-5" />
-                      Confirm Booking
+                      {isInstantPurchase ? 'Instant Purchase' : 'Confirm Booking'}
                     </>
                   )}
                 </button>
@@ -1129,7 +1241,8 @@ export default function ReviewBookPage() {
               </div>
 
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-                By clicking "Confirm Booking", you agree to our Terms & Conditions
+                By clicking "{isInstantPurchase ? 'Instant Purchase' : 'Confirm Booking'}", you
+                agree to our Terms & Conditions
               </p>
             </div>
           </div>

@@ -34,6 +34,14 @@ import {
   type SignInFormData,
 } from '@/lib/utils/validation'
 
+function sanitizeCallbackUrl(callbackUrl: string | null): string | null {
+  if (!callbackUrl) return null
+  const trimmed = callbackUrl.trim()
+  if (!trimmed.startsWith('/')) return null
+  if (trimmed.startsWith('//')) return null
+  return trimmed
+}
+
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,11 +53,17 @@ export default function AuthPage() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   const callbackUrl = searchParams.get('callbackUrl')
+  const safeCallbackUrl = useMemo(() => sanitizeCallbackUrl(callbackUrl), [callbackUrl])
 
   // If user is already logged in and somehow lands on /auth,
-  // automatically redirect them to their role-based dashboard.
+  // redirect to callbackUrl (if provided) or role-based dashboard.
   useEffect(() => {
     if (!session?.user) return
+
+    if (safeCallbackUrl) {
+      router.replace(safeCallbackUrl)
+      return
+    }
 
     const role = (session.user as { role?: RoleType } | undefined)?.role
     if (!role) return
@@ -58,7 +72,7 @@ export default function AuthPage() {
     if (dashboardRoute) {
       router.replace(dashboardRoute)
     }
-  }, [session, router])
+  }, [session, router, safeCallbackUrl])
 
   useEffect(() => {
     const authError = searchParams.get('error')
@@ -141,8 +155,8 @@ export default function AuthPage() {
 
       if (result?.ok) {
         // Check if there's a callback URL to redirect to
-        if (callbackUrl) {
-          router.push(callbackUrl)
+        if (safeCallbackUrl) {
+          router.push(safeCallbackUrl)
         } else {
           // Otherwise, redirect to role-based dashboard
           const session = await getSession()
@@ -155,11 +169,19 @@ export default function AuthPage() {
           }
         }
       } else {
-        console.error('Sign in failed:', result?.error)
-        if (result?.error?.includes('ACCOUNT_INACTIVE')) {
+        const authError = result?.error ?? ''
+        if (authError.includes('ACCOUNT_INACTIVE')) {
           setError('Your account is inactive. Please contact an administrator.')
         } else {
           setError('Invalid email or password. Please try again.')
+        }
+
+        if (
+          process.env.NODE_ENV === 'development' &&
+          authError.length > 0 &&
+          authError !== 'CredentialsSignin'
+        ) {
+          console.warn('Unexpected sign in response:', authError)
         }
       }
     } catch (error: unknown) {
@@ -217,8 +239,8 @@ export default function AuthPage() {
 
       if (result?.ok) {
         // Check if there's a callback URL to redirect to
-        if (callbackUrl) {
-          router.push(callbackUrl)
+        if (safeCallbackUrl) {
+          router.push(safeCallbackUrl)
         } else {
           // Otherwise, redirect to role-based dashboard
           const session = await getSession()
@@ -261,9 +283,17 @@ export default function AuthPage() {
     try {
       // Use redirect: true to let NextAuth handle the redirect
       // The middleware will handle role-based routing after authentication
-      await signIn(provider, {
-        redirect: true,
-      })
+      await signIn(
+        provider,
+        safeCallbackUrl
+          ? {
+              redirect: true,
+              callbackUrl: safeCallbackUrl,
+            }
+          : {
+              redirect: true,
+            },
+      )
     } catch (error) {
       console.error('Social sign in error:', error)
       const errorMessage = handleFirebaseError(error)

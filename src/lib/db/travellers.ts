@@ -213,10 +213,10 @@ export async function updateTraveller(
   return traveller || null
 }
 
-// Delete traveller (only SuperAdmin can delete)
+// Delete traveller (SuperAdmin and Admin can delete)
 export async function deleteTraveller(id: string, userRole: string, _userId: string) {
-  if (userRole !== 'SuperAdmin') {
-    throw new Error('Only SuperAdmin can delete travellers')
+  if (userRole !== 'SuperAdmin' && userRole !== 'Admin') {
+    throw new Error('Only SuperAdmin or Admin can delete travellers')
   }
 
   const [traveller] = await db.delete(travellers).where(eq(travellers.id, id)).returning()

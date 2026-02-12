@@ -86,6 +86,33 @@ export default function AdminTravellersPage() {
     setShowEditForm(true)
   }
 
+  const handleDeleteTraveller = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this traveller? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/travellers/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = (await response.json()) as { error?: string }
+        alert(`Error deleting traveller: ${error.error || 'Unknown error'}`)
+        return
+      }
+
+      setTravellers((prev) => prev.filter((item) => item.id !== id))
+      alert('Traveller deleted successfully!')
+    } catch (error) {
+      console.error('Error deleting traveller:', error)
+      alert('Failed to delete traveller. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleFormSubmit = async (formData: TravellerFormData) => {
     try {
       setIsLoading(true)
@@ -174,9 +201,10 @@ export default function AdminTravellersPage() {
       <TravellersList
         travellers={travellers}
         role="Admin"
-        canDelete={false}
+        canDelete={true}
         onAddTraveller={handleAddTraveller}
         onEditTraveller={handleEditTraveller}
+        onDeleteTraveller={(id) => void handleDeleteTraveller(id)}
         onRefresh={() => void refreshTravellers()}
         isLoading={isLoading}
       />

@@ -99,9 +99,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
       }
 
-      // Helper function to convert empty strings to null for date fields
-      const processDateField = (dateValue: unknown): string | null => {
-        if (dateValue === null || dateValue === undefined) return null
+      // Helper function for partial updates:
+      // `undefined` means "no change", `null`/empty means clear the value.
+      const processDateField = (dateValue: unknown): string | null | undefined => {
+        if (dateValue === undefined) return undefined
+        if (dateValue === null) return null
         if (typeof dateValue === 'string') {
           const v = dateValue.trim()
           return v.length === 0 || v === 'undefined' ? null : v
@@ -157,7 +159,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   })
 }
 
-// DELETE /api/travellers/[id] - Delete traveller (SuperAdmin only)
+// DELETE /api/travellers/[id] - Delete traveller (SuperAdmin and Admin)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -176,6 +178,9 @@ export async function DELETE(
       const { id } = await params
       const role = typeof userObj.role === 'string' ? userObj.role : ''
       const userId = typeof userObj.id === 'string' ? userObj.id : ''
+      if (role !== 'SuperAdmin' && role !== 'Admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       const traveller = await deleteTraveller(id, role, userId)
 
       if (!traveller) {

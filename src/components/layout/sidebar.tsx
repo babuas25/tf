@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useState } from 'react'
 
@@ -64,6 +64,7 @@ export function Sidebar({ className, isMobile = false, onClose, onCollapseChange
   const [isCollapsed, setIsCollapsed] = useState(true)
   const { data: session } = useSession()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { logoType, textLogo, logoImage } = useTheme()
 
   // On mobile, always show expanded sidebar with text
@@ -196,7 +197,10 @@ export function Sidebar({ className, isMobile = false, onClose, onCollapseChange
             size={shouldShowText ? 'sm' : 'icon'}
             onClick={() => {
               if (isMobile && onClose) onClose()
-              void signOut({ callbackUrl: '/' })
+              const qs = searchParams.toString()
+              const currentPath = `${pathname}${qs ? `?${qs}` : ''}`
+              const callbackUrl = `/auth?callbackUrl=${encodeURIComponent(currentPath)}`
+              void signOut({ callbackUrl })
             }}
             className="w-full justify-start px-3 py-2 hover:bg-white/20 dark:hover:bg-white/10 border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 group"
             aria-label="Sign out"

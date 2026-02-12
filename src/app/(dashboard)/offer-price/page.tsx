@@ -31,8 +31,33 @@ import type { OfferPriceResponse, DetailedOffer } from '@/types/flight/domain/of
 
 const RECENT_PHONES_KEY = 'tripfeels-recent-phones'
 const RECENT_EMAILS_KEY = 'tripfeels-recent-emails'
+const RECENT_FIRST_NAMES_KEY = 'tripfeels-recent-first-names'
+const RECENT_LAST_NAMES_KEY = 'tripfeels-recent-last-names'
+const RECENT_PASSPORT_NUMBERS_KEY = 'tripfeels-recent-passport-numbers'
+const TRAVELLER_SYNC_STATE_KEY = 'tripfeels-traveller-sync-state'
 
 const MAX_RECENT = 5
+
+interface TravellerSyncState {
+  traceId: string
+  offerId: string
+  travellerIdsByPassenger: Record<string, string>
+}
+
+interface SavedTraveller {
+  id: string
+  ptc: string
+  givenName: string
+  surname: string
+  gender?: string | null
+  birthdate?: string | null
+  nationality?: string | null
+  phoneNumber?: string | null
+  countryDialingCode?: string | null
+  emailAddress?: string | null
+  documentId?: string | null
+  documentExpiryDate?: string | null
+}
 
 function getRecentFromStorage(key: string): string[] {
   if (typeof window === 'undefined') return []
@@ -83,6 +108,15 @@ export default function OfferPricePage() {
   const [hasFetched, setHasFetched] = useState(false) // Prevent multiple API calls
   const [recentPhones, setRecentPhones] = useState<string[]>([])
   const [recentEmails, setRecentEmails] = useState<string[]>([])
+  const [recentFirstNames, setRecentFirstNames] = useState<string[]>([])
+  const [recentLastNames, setRecentLastNames] = useState<string[]>([])
+  const [recentPassportNumbers, setRecentPassportNumbers] = useState<string[]>([])
+  const [savedTravellers, setSavedTravellers] = useState<SavedTraveller[]>([])
+  const [selectedTravellerByPassenger, setSelectedTravellerByPassenger] = useState<
+    Record<number, string>
+  >({})
+  const [isLoadingSavedTravellers, setIsLoadingSavedTravellers] = useState(false)
+  const [isSyncingTravellers, setIsSyncingTravellers] = useState(false)
   const hasRestoredFromSessionStorage = useRef(false)
   const [fareRulesData, setFareRulesData] = useState<FareRulesResponse['response']>(null)
   const [fareRulesLoading, setFareRulesLoading] = useState(false)
@@ -90,11 +124,77 @@ export default function OfferPricePage() {
   const [fareRulesFetched, setFareRulesFetched] = useState(false)
   const [responseTraceId, setResponseTraceId] = useState<string | null>(null)
 
-  // Load recent phones/emails from localStorage on mount
+  // Load recent input suggestions from localStorage on mount
   useEffect(() => {
     setRecentPhones(getRecentFromStorage(RECENT_PHONES_KEY))
     setRecentEmails(getRecentFromStorage(RECENT_EMAILS_KEY))
+    setRecentFirstNames(getRecentFromStorage(RECENT_FIRST_NAMES_KEY))
+    setRecentLastNames(getRecentFromStorage(RECENT_LAST_NAMES_KEY))
+    setRecentPassportNumbers(getRecentFromStorage(RECENT_PASSPORT_NUMBERS_KEY))
   }, [])
+
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    let isMounted = true
+    const fetchSavedTravellers = async () => {
+      try {
+        setIsLoadingSavedTravellers(true)
+        const response = await fetch('/api/travellers?page=1&limit=200')
+        if (!response.ok) return
+        const raw = (await response.json()) as unknown
+        const list =
+          raw &&
+          typeof raw === 'object' &&
+          'travellers' in raw &&
+          Array.isArray((raw as { travellers?: unknown[] }).travellers)
+            ? ((raw as { travellers: unknown[] }).travellers ?? [])
+            : []
+
+        const parsed = list.reduce<SavedTraveller[]>((acc, item) => {
+          if (!item || typeof item !== 'object') return acc
+          const t = item as Record<string, unknown>
+          if (
+            typeof t.id !== 'string' ||
+            typeof t.givenName !== 'string' ||
+            typeof t.surname !== 'string'
+          ) {
+            return acc
+          }
+
+          acc.push({
+            id: t.id,
+            ptc: typeof t.ptc === 'string' ? t.ptc : '',
+            givenName: t.givenName,
+            surname: t.surname,
+            gender: typeof t.gender === 'string' ? t.gender : null,
+            birthdate: typeof t.birthdate === 'string' ? t.birthdate : null,
+            nationality: typeof t.nationality === 'string' ? t.nationality : null,
+            phoneNumber: typeof t.phoneNumber === 'string' ? t.phoneNumber : null,
+            countryDialingCode: typeof t.countryDialingCode === 'string' ? t.countryDialingCode : null,
+            emailAddress: typeof t.emailAddress === 'string' ? t.emailAddress : null,
+            documentId: typeof t.documentId === 'string' ? t.documentId : null,
+            documentExpiryDate: typeof t.documentExpiryDate === 'string' ? t.documentExpiryDate : null,
+          })
+
+          return acc
+        }, [])
+
+        if (isMounted) {
+          setSavedTravellers(parsed)
+        }
+      } catch (err) {
+        console.error('Failed to fetch saved travellers:', err)
+      } finally {
+        if (isMounted) setIsLoadingSavedTravellers(false)
+      }
+    }
+
+    void fetchSavedTravellers()
+    return () => {
+      isMounted = false
+    }
+  }, [status])
 
   // Get last arrival date of itinerary (age is calculated from this for all pax types)
   const getLastArrivalDate = () => {
@@ -126,11 +226,11 @@ export default function OfferPricePage() {
       return { min: '1900-01-01', max: maxDate.toISOString().split('T')[0] }
     } else if (paxType === 'Child') {
       // Child: from 2 years up to 11 years 11 months 30 days at last arrival
-      // min DOB = lastArrival - 12 years + 1 day (so age at last arrival ≤ 11y 11m 30d)
+      // min DOB = lastArrival - 12 years + 1 day (so age at last arrival â‰¤ 11y 11m 30d)
       const minDate = new Date(lastArrivalDate)
       minDate.setFullYear(minDate.getFullYear() - 12)
       minDate.setDate(minDate.getDate() + 1)
-      // max DOB = lastArrival - 2 years (so age at last arrival ≥ 2 years)
+      // max DOB = lastArrival - 2 years (so age at last arrival â‰¥ 2 years)
       const maxDate = new Date(lastArrivalDate)
       maxDate.setFullYear(maxDate.getFullYear() - 2)
       return { min: minDate.toISOString().split('T')[0], max: maxDate.toISOString().split('T')[0] }
@@ -140,7 +240,7 @@ export default function OfferPricePage() {
       const minDate = new Date(lastArrivalDate)
       minDate.setFullYear(minDate.getFullYear() - 2)
       minDate.setDate(minDate.getDate() + 1)
-      // max DOB = today (dates ≥ 2 years from last arrival are disabled)
+      // max DOB = today (dates â‰¥ 2 years from last arrival are disabled)
       return { min: minDate.toISOString().split('T')[0], max: today.toISOString().split('T')[0] }
     }
     return { min: '', max: '' }
@@ -195,6 +295,243 @@ export default function OfferPricePage() {
   const offerIds = searchParams.getAll('offerId')
   const offerId = offerIds[0] // Keep first one for backward compatibility with one-way
 
+  const normalizeDialingCode = (value?: string) => value?.replace(/[^\d]/g, '') || ''
+  const normalizePhone = (value?: string) => value?.replace(/[^\d]/g, '') || ''
+  const normalizeDateOnly = (value?: string | null) => {
+    if (!value) return ''
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    const direct = trimmed.split('T')[0] || ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct
+    const dt = new Date(trimmed)
+    if (Number.isNaN(dt.getTime())) return ''
+    return dt.toISOString().split('T')[0] || ''
+  }
+
+  const resolveNationalityCode = (value?: string | null) => {
+    if (!value) return ''
+    const normalized = value.trim().toUpperCase()
+    if (!normalized) return ''
+    if (COUNTRIES.some((country) => country.code === normalized)) return normalized
+    const byName = COUNTRIES.find((country) => country.name.toUpperCase() === normalized)
+    return byName?.code || ''
+  }
+
+  const resolvePhoneCode = (value?: string | null) => {
+    const digits = normalizeDialingCode(value || undefined)
+    if (!digits) return ''
+    const withPlus = `+${digits}`
+    return PHONE_COUNTRIES.some((country) => country.phoneCode === withPlus) ? withPlus : withPlus
+  }
+
+  const applySavedTravellerToPassenger = (
+    passengerIndex: number,
+    passengerType: string,
+    travellerId: string,
+  ) => {
+    const traveller = savedTravellers.find((item) => item.id === travellerId)
+    if (!traveller) return
+    const travellerEmail = (traveller.emailAddress || '').trim()
+
+    setPassengerData((prev) => {
+      const existingPassenger = prev[passengerIndex] || {}
+      const fallbackContact = prev[0] || {}
+      const travellerDob = normalizeDateOnly(traveller.birthdate)
+      const travellerDocExpiry = normalizeDateOnly(traveller.documentExpiryDate)
+      const travellerPhone = normalizePhone(traveller.phoneNumber || undefined)
+      const travellerPhoneCode = resolvePhoneCode(
+        traveller.countryDialingCode || fallbackContact.phoneCode,
+      )
+      const nationalityCode = resolveNationalityCode(traveller.nationality)
+
+      const nextPassenger: Record<string, string> = {
+        ...existingPassenger,
+        paxType: passengerType,
+        firstName: (traveller.givenName || existingPassenger.firstName || '').trim().toUpperCase(),
+        lastName: (traveller.surname || existingPassenger.lastName || '').trim().toUpperCase(),
+        gender:
+          traveller.gender === 'Male' || traveller.gender === 'Female'
+            ? traveller.gender
+            : existingPassenger.gender || '',
+        nationality: nationalityCode || existingPassenger.nationality || 'BD',
+      }
+
+      if (travellerDob) {
+        nextPassenger.dob = travellerDob
+      }
+      if (traveller.documentId?.trim()) {
+        nextPassenger.passportNumber = traveller.documentId.trim().toUpperCase()
+      }
+      if (travellerDocExpiry) {
+        nextPassenger.passportExpiry = travellerDocExpiry
+      }
+
+      if (passengerIndex === 0) {
+        nextPassenger.phone = travellerPhone || existingPassenger.phone || fallbackContact.phone || ''
+        nextPassenger.phoneCode =
+          travellerPhoneCode || existingPassenger.phoneCode || fallbackContact.phoneCode || '+880'
+        nextPassenger.email = travellerEmail || existingPassenger.email || fallbackContact.email || ''
+      }
+
+      return {
+        ...prev,
+        [passengerIndex]: nextPassenger,
+      }
+    })
+
+    setRecentFirstNames((prev) =>
+      saveRecentToStorage(RECENT_FIRST_NAMES_KEY, traveller.givenName.toUpperCase(), prev),
+    )
+    setRecentLastNames((prev) =>
+      saveRecentToStorage(RECENT_LAST_NAMES_KEY, traveller.surname.toUpperCase(), prev),
+    )
+    if (traveller.documentId?.trim()) {
+      setRecentPassportNumbers((prev) =>
+        saveRecentToStorage(RECENT_PASSPORT_NUMBERS_KEY, traveller.documentId!.toUpperCase(), prev),
+      )
+    }
+    if (traveller.phoneNumber?.trim()) {
+      setRecentPhones((prev) =>
+        saveRecentToStorage(
+          RECENT_PHONES_KEY,
+          normalizePhone(traveller.phoneNumber || undefined),
+          prev,
+        ),
+      )
+    }
+    if (travellerEmail) {
+      setRecentEmails((prev) => saveRecentToStorage(RECENT_EMAILS_KEY, travellerEmail, prev))
+    }
+  }
+
+  const readTravellerSyncState = (): TravellerSyncState | null => {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = sessionStorage.getItem(TRAVELLER_SYNC_STATE_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object') return null
+      const obj = parsed as Record<string, unknown>
+      const syncedTraceId = typeof obj.traceId === 'string' ? obj.traceId : ''
+      const syncedOfferId = typeof obj.offerId === 'string' ? obj.offerId : ''
+      const ids =
+        obj.travellerIdsByPassenger && typeof obj.travellerIdsByPassenger === 'object'
+          ? (obj.travellerIdsByPassenger as Record<string, unknown>)
+          : {}
+
+      const travellerIdsByPassenger: Record<string, string> = {}
+      Object.entries(ids).forEach(([key, value]) => {
+        if (typeof value === 'string' && value.trim()) {
+          travellerIdsByPassenger[key] = value
+        }
+      })
+
+      return {
+        traceId: syncedTraceId,
+        offerId: syncedOfferId,
+        travellerIdsByPassenger,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const buildTravellerPayload = (
+    pax: Record<string, string> | undefined,
+    fallbackContact: Record<string, string> | undefined,
+    paxType: string,
+  ) => {
+    const givenName = (pax?.firstName || '').trim().toUpperCase()
+    const surname = (pax?.lastName || '').trim().toUpperCase()
+    const phoneNumber = normalizePhone(pax?.phone || fallbackContact?.phone)
+    if (!givenName || !surname || !phoneNumber) return null
+
+    const emailAddress = (pax?.email || fallbackContact?.email || '').trim()
+    const countryDialingCode = normalizeDialingCode(pax?.phoneCode || fallbackContact?.phoneCode)
+    const documentId = (pax?.passportNumber || '').trim().toUpperCase()
+
+    return {
+      ptc: paxType,
+      givenName,
+      surname,
+      gender: pax?.gender || 'Other',
+      birthdate: pax?.dob || undefined,
+      nationality: pax?.nationality || undefined,
+      phoneNumber,
+      countryDialingCode: countryDialingCode || undefined,
+      emailAddress: emailAddress || undefined,
+      documentType: passportRequired ? 'Passport' : undefined,
+      documentId: documentId || undefined,
+      documentExpiryDate: pax?.passportExpiry || undefined,
+    }
+  }
+
+  const syncTravellersFromOfferPrice = async () => {
+    if (typeof window === 'undefined') return
+
+    const passengers = getAllPassengers()
+    const fallbackContact = passengerData[0]
+    const existingState = readTravellerSyncState()
+    const travellerIdsFromState: Record<string, string> =
+      existingState &&
+      existingState.traceId === (traceId || '') &&
+      existingState.offerId === (offerId || '')
+        ? { ...existingState.travellerIdsByPassenger }
+        : {}
+    const selectedTravellerIds: Record<string, string> = {}
+    Object.entries(selectedTravellerByPassenger).forEach(([passengerIndex, travellerId]) => {
+      if (typeof travellerId === 'string' && travellerId.trim()) {
+        selectedTravellerIds[passengerIndex] = travellerId
+      }
+    })
+
+    // Selected traveller from dropdown has highest priority and should be updated in-place.
+    const travellerIdsByPassenger: Record<string, string> = {
+      ...travellerIdsFromState,
+      ...selectedTravellerIds,
+    }
+
+    for (const passenger of passengers) {
+      const pax = passengerData[passenger.index]
+      const payload = buildTravellerPayload(pax, fallbackContact, passenger.paxType)
+      if (!payload) continue
+
+      const existingTravellerId = travellerIdsByPassenger[String(passenger.index)]
+      const response = await fetch(
+        existingTravellerId ? `/api/travellers/${existingTravellerId}` : '/api/travellers',
+        {
+          method: existingTravellerId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      )
+
+      if (!response.ok) {
+        const err = (await response.json().catch(() => null)) as
+          | { error?: string; details?: unknown }
+          | null
+        throw new Error(
+          err?.error || `Failed to sync traveller for passenger ${passenger.paxNumber}`,
+        )
+      }
+
+      const result = (await response.json()) as
+        | { traveller?: { id?: string } }
+        | { success?: boolean; traveller?: { id?: string } }
+      const id = result?.traveller?.id
+      if (typeof id === 'string' && id.trim()) {
+        travellerIdsByPassenger[String(passenger.index)] = id
+      }
+    }
+
+    const nextState: TravellerSyncState = {
+      traceId: traceId || '',
+      offerId: offerId || '',
+      travellerIdsByPassenger,
+    }
+    sessionStorage.setItem(TRAVELLER_SYNC_STATE_KEY, JSON.stringify(nextState))
+  }
+
   // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
@@ -209,6 +546,132 @@ export default function OfferPricePage() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
+  const handleSelectSSR = async () => {
+    // Validate all passengers data
+    const errors: string[] = []
+    const passengers = getAllPassengers()
+
+    passengers.forEach((pax) => {
+      const paxData = passengerData[pax.index]
+      const passengerLabel = `Passenger ${pax.paxNumber} (${pax.paxType})`
+
+      if (!paxData?.firstName || paxData.firstName.trim() === '') {
+        errors.push(`${passengerLabel}: First name is required`)
+      }
+      if (!paxData?.lastName || paxData.lastName.trim() === '') {
+        errors.push(`${passengerLabel}: Last name is required`)
+      }
+      if (!paxData?.dob) {
+        errors.push(`${passengerLabel}: Date of birth is required`)
+      } else {
+        // Validate DOB is within allowed range for pax type
+        const dobRange = getDobRange(pax.paxType)
+        const dob = new Date(paxData.dob)
+        if (dobRange.min && dobRange.max) {
+          const minDate = new Date(dobRange.min)
+          const maxDate = new Date(dobRange.max)
+          if (dob < minDate || dob > maxDate) {
+            if (pax.paxType === 'Adult') {
+              errors.push(`${passengerLabel}: Must be 12+ years old at last arrival`)
+            } else if (pax.paxType === 'Child') {
+              errors.push(
+                `${passengerLabel}: Must be 2 years up to 11 years 11 months 30 days at last arrival`,
+              )
+            } else if (pax.paxType === 'Infant') {
+              errors.push(`${passengerLabel}: Must be under 2 years old at last arrival`)
+            }
+          }
+        }
+      }
+      if (!paxData?.gender) {
+        errors.push(`${passengerLabel}: Gender is required`)
+      }
+      if (!paxData?.nationality) {
+        errors.push(`${passengerLabel}: Nationality is required`)
+      }
+      // Infants: require associated adult and that adult has name
+      if (pax.paxType === 'Infant') {
+        const assocIndex = paxData?.associatedAdultIndex
+        if (assocIndex === undefined || assocIndex === '') {
+          errors.push(`${passengerLabel}: Associated adult passenger is required`)
+        } else {
+          const adultData = passengerData[Number(assocIndex)]
+          if (!adultData?.firstName?.trim() || !adultData?.lastName?.trim()) {
+            errors.push(
+              `${passengerLabel}: Please complete the associated adult's name first (Passenger ${Number(assocIndex) + 1})`,
+            )
+          }
+        }
+      }
+
+      if (passportRequired) {
+        if (!paxData?.passportNumber || paxData.passportNumber.trim() === '') {
+          errors.push(`${passengerLabel}: Passport number is required`)
+        }
+        if (!paxData?.passportExpiry) {
+          errors.push(`${passengerLabel}: Passport expiry date is required`)
+        }
+      }
+
+      // Validate contact info for first passenger
+      if (pax.index === 0) {
+        if (!paxData?.phone || paxData.phone.trim() === '') {
+          errors.push(`${passengerLabel}: Phone number is required`)
+        }
+        if (!paxData?.email || paxData.email.trim() === '') {
+          errors.push(`${passengerLabel}: Email is required`)
+        }
+      }
+    })
+
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    setValidationErrors([])
+    console.log('All passengers data validated:', passengerData)
+
+    try {
+      setIsSyncingTravellers(true)
+      await syncTravellersFromOfferPrice()
+    } catch (syncError) {
+      console.error('Failed to sync travellers from offer price:', syncError)
+      setValidationErrors(['Failed to save travellers. Please check your data and try again.'])
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    } finally {
+      setIsSyncingTravellers(false)
+    }
+
+    // Store all data in sessionStorage for SSR page
+    sessionStorage.setItem('passengerData', JSON.stringify(passengerData))
+    sessionStorage.setItem('offerId', offerId || '')
+    sessionStorage.setItem('traceId', traceId || '')
+    sessionStorage.setItem('availableSSR', JSON.stringify(availableSSR))
+    sessionStorage.setItem('seatsAvailable', JSON.stringify(seatsAvailable))
+    sessionStorage.setItem('serviceListAvailable', JSON.stringify(serviceListAvailable))
+    sessionStorage.setItem('passportRequired', JSON.stringify(passportRequired))
+
+    // Store offer details for Review & Book page
+    if (offer) {
+      sessionStorage.setItem(
+        'offerDetails',
+        JSON.stringify({
+          currency: offer.price.totalPayable.curreny,
+          totalPrice: offer.price.totalPayable.total,
+          fareType: offer.fareType,
+          paxSegmentList: offer.paxSegmentList,
+          fareDetailList: offer.fareDetailList,
+        }),
+      )
+    }
+
+    // Navigate to SSR page
+    router.push(`/ssr?traceId=${traceId}&offerId=${offerId}`)
+  }
+
   const fetchOfferPrice = useCallback(async () => {
     if (!traceId || !offerIds || offerIds.length === 0) {
       setError('Missing required parameters')
@@ -218,7 +681,7 @@ export default function OfferPricePage() {
 
     // Prevent multiple API calls
     if (hasFetched) {
-      console.log('⏭️ Already fetched, skipping')
+      console.log('â­ï¸ Already fetched, skipping')
       return
     }
 
@@ -236,7 +699,7 @@ export default function OfferPricePage() {
         const now = Date.now()
         // Use stored response if it's less than 5 minutes old
         if (now - timestamp < 5 * 60 * 1000) {
-          console.log('📋 Using stored OfferPrice response')
+          console.log('ðŸ“‹ Using stored OfferPrice response')
           const data = JSON.parse(storedResponse) as OfferPriceResponse
 
           if (
@@ -276,7 +739,7 @@ export default function OfferPricePage() {
       offerId: offerIds, // Pass all offer IDs for two-oneway flights
     }
 
-    console.log('🔄 Fetching offer price with:', requestBody)
+    console.log('ðŸ”„ Fetching offer price with:', requestBody)
 
     try {
       const response = await fetch('/api/flight/offerprice', {
@@ -289,7 +752,7 @@ export default function OfferPricePage() {
 
       const data = (await response.json()) as OfferPriceResponse
 
-      console.log('📡 Offer price response:', data)
+      console.log('ðŸ“¡ Offer price response:', data)
 
       if (
         data.success &&
@@ -480,17 +943,61 @@ export default function OfferPricePage() {
   const outboundSegments = offer.paxSegmentList.filter((s) => !s.paxSegment.returnJourney)
   const returnSegments = offer.paxSegmentList.filter((s) => s.paxSegment.returnJourney)
 
+  const parseDateTimeMs = (value?: string) => {
+    if (!value) return null
+    const ms = Date.parse(value)
+    return Number.isFinite(ms) ? ms : null
+  }
+
+  const formatDuration = (totalMinutes: number) => {
+    const safeMinutes = Number.isFinite(totalMinutes) && totalMinutes > 0 ? totalMinutes : 0
+    const hours = Math.floor(safeMinutes / 60)
+    const minutes = safeMinutes % 60
+    return `${hours}h ${minutes}m`
+  }
+
+  const formatScheduleTime = (value?: string) => {
+    if (!value) return '--:--'
+    const dt = new Date(value)
+    if (Number.isNaN(dt.getTime())) return '--:--'
+    return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const formatShortDate = (value?: string) => {
+    if (!value) return '--'
+    const dt = new Date(value)
+    if (Number.isNaN(dt.getTime())) return '--'
+    return dt.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+  }
+
   // Helper function to render flight segment
   const renderFlightSegment = (segments: typeof outboundSegments, title: string) => {
     if (segments.length === 0) return null
+    const firstSegment = segments[0]?.paxSegment
+    const lastSegment = segments[segments.length - 1]?.paxSegment
+
+    const startMs = parseDateTimeMs(firstSegment?.departure.aircraftScheduledDateTime)
+    const endMs = parseDateTimeMs(lastSegment?.arrival.aircraftScheduledDateTime)
+    const summedFlightMinutes = segments.reduce(
+      (sum, s) => sum + (Number.parseInt(s.paxSegment.duration || '0', 10) || 0),
+      0,
+    )
+    const journeyMinutes =
+      startMs !== null && endMs !== null && endMs >= startMs
+        ? Math.round((endMs - startMs) / 60000)
+        : summedFlightMinutes
 
     return (
-      <div className="mb-3 last:mb-0">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 sm:mb-4">
+      <div className="mb-2.5 last:mb-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
           {title}
         </h3>
         {/* Airline Info Header - More compact on small screens */}
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-2.5 mb-2.5 sm:mb-4">
           <AirlineLogo
             airlineId={segments[0]?.paxSegment.marketingCarrierInfo.carrierDesigCode || ''}
             size={48}
@@ -518,38 +1025,29 @@ export default function OfferPricePage() {
         </div>
 
         {/* Flight Card Layout - Horizontal Design for both Mobile and Desktop */}
-        <div className="space-y-3 sm:space-y-0">
+        <div className="space-y-2 sm:space-y-0">
           {/* Horizontal Layout - Three Column Design */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 items-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 items-center">
             {/* Left Column - Departure */}
             <div className="text-center">
               <div className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">
-                FROM {segments[0]?.paxSegment.departure.iatA_LocationCode}
+                FROM {firstSegment?.departure.iatA_LocationCode}
               </div>
-              <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {new Date(
-                  segments[0]?.paxSegment.departure.aircraftScheduledDateTime || '',
-                ).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-0.5">
+                {formatScheduleTime(firstSegment?.departure.aircraftScheduledDateTime)}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">
-                {getAirportCity(segments[0]?.paxSegment.departure.iatA_LocationCode)}
+              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-0.5">
+                {getAirportCity(firstSegment?.departure.iatA_LocationCode)}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(
-                  segments[0]?.paxSegment.departure.aircraftScheduledDateTime || '',
-                ).toLocaleDateString('en-GB', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}
+                {formatShortDate(firstSegment?.departure.aircraftScheduledDateTime)}
               </div>
             </div>
 
             {/* Middle Column - Flight Info */}
-            <div className="flex flex-col items-center justify-center gap-2">
+            <div className="flex flex-col items-center justify-center gap-1.5">
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {Math.floor(parseInt(segments[0]?.paxSegment.duration || '0') / 60)}h{' '}
-                {parseInt(segments[0]?.paxSegment.duration || '0') % 60}m
+                {formatDuration(journeyMinutes)}
               </div>
               <div className="flex items-center w-full gap-2">
                 <div className="flex-1 h-px border-t border-dashed border-gray-300 dark:border-gray-600"></div>
@@ -569,36 +1067,94 @@ export default function OfferPricePage() {
             {/* Right Column - Arrival */}
             <div className="text-center">
               <div className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">
-                TO {segments[segments.length - 1]?.paxSegment.arrival.iatA_LocationCode}
+                TO {lastSegment?.arrival.iatA_LocationCode}
               </div>
-              <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {new Date(
-                  segments[segments.length - 1]?.paxSegment.arrival.aircraftScheduledDateTime || '',
-                ).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-0.5">
+                {formatScheduleTime(lastSegment?.arrival.aircraftScheduledDateTime)}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">
-                {getAirportCity(
-                  segments[segments.length - 1]?.paxSegment.arrival.iatA_LocationCode,
-                )}
+              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-0.5">
+                {getAirportCity(lastSegment?.arrival.iatA_LocationCode)}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date(
-                  segments[segments.length - 1]?.paxSegment.arrival.aircraftScheduledDateTime || '',
-                ).toLocaleDateString('en-GB', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}
+                {formatShortDate(lastSegment?.arrival.aircraftScheduledDateTime)}
               </div>
             </div>
           </div>
         </div>
+
+        {segments.length > 1 && (
+          <div className="mt-2.5 sm:mt-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-2.5 sm:p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300 mb-2">
+              Stop Details
+            </p>
+            <div className="space-y-2">
+              {segments.slice(0, -1).map((segment, index) => {
+                const currentSegment = segment.paxSegment
+                const nextSegment = segments[index + 1]?.paxSegment
+                if (!nextSegment) return null
+
+                const layoverStartMs = parseDateTimeMs(
+                  currentSegment.arrival.aircraftScheduledDateTime,
+                )
+                const layoverEndMs = parseDateTimeMs(
+                  nextSegment.departure.aircraftScheduledDateTime,
+                )
+                const layoverMinutes =
+                  layoverStartMs !== null &&
+                  layoverEndMs !== null &&
+                  layoverEndMs >= layoverStartMs
+                    ? Math.round((layoverEndMs - layoverStartMs) / 60000)
+                    : 0
+
+                const stopCode = currentSegment.arrival.iatA_LocationCode
+                const stopCity = getAirportCity(stopCode)
+                const stopLabel =
+                  stopCity && stopCity.toUpperCase() !== stopCode.toUpperCase()
+                    ? `${stopCity} (${stopCode})`
+                    : stopCode
+
+                return (
+                  <div
+                    key={`${stopCode}-${index}`}
+                    className="rounded-md border border-gray-200/90 dark:border-white/10 bg-white/80 dark:bg-black/20 p-2.5"
+                  >
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Stop {index + 1}: {stopLabel}
+                    </p>
+                    <div className="mt-1.5 grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-3">
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Layover</span>{' '}
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {formatDuration(layoverMinutes)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Arr</span>{' '}
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {formatScheduleTime(currentSegment.arrival.aircraftScheduledDateTime)} (
+                          {formatShortDate(currentSegment.arrival.aircraftScheduledDateTime)})
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Dep</span>{' '}
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {formatScheduleTime(nextSegment.departure.aircraftScheduledDateTime)} (
+                          {formatShortDate(nextSegment.departure.aircraftScheduledDateTime)})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-white dark:bg-black pt-14 overflow-y-auto overflow-x-hidden z-40 sm:relative sm:inset-auto sm:w-full sm:h-auto sm:pt-24 sm:min-h-[calc(100vh-3.5rem)] sm:z-auto">
+    <div className="fixed inset-0 w-screen h-screen bg-white dark:bg-black pt-14 overflow-y-auto overflow-x-hidden z-40 sm:relative sm:inset-auto sm:w-full sm:h-auto sm:pt-16 sm:min-h-[calc(100vh-3.5rem)] sm:z-auto">
       <datalist id="recent-phones">
         {recentPhones.map((p) => (
           <option key={p} value={p} />
@@ -609,11 +1165,26 @@ export default function OfferPricePage() {
           <option key={e} value={e} />
         ))}
       </datalist>
+      <datalist id="recent-first-names">
+        {recentFirstNames.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <datalist id="recent-last-names">
+        {recentLastNames.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <datalist id="recent-passport-numbers">
+        {recentPassportNumbers.map((passport) => (
+          <option key={passport} value={passport} />
+        ))}
+      </datalist>
 
-      <div className="w-full sm:max-w-4xl sm:mx-auto px-0 sm:px-4 py-0 sm:py-6 space-y-0 sm:space-y-4">
+      <div className="w-full max-w-[1480px] mx-auto px-0 sm:px-4 lg:px-6 xl:px-8 py-0 sm:py-4 space-y-2 sm:space-y-3">
         {/* Progress Stepper */}
-        <div className="mb-0 sm:mb-6 px-3 sm:px-0 py-3 bg-white sm:bg-transparent border-b border-gray-200/80 dark:border-white/10 sm:border-0">
-          <div className="flex items-center justify-between w-full max-w-none xs:max-w-2xl mx-auto">
+        <div className="mb-0 sm:mb-4 px-3 sm:px-0 py-2.5 bg-white dark:bg-neutral-950 sm:bg-transparent sm:dark:bg-transparent border-b border-gray-200/80 dark:border-white/10 sm:border-0">
+          <div className="flex items-center justify-between w-full max-w-none xs:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto">
             {/* Step 1 - Active */}
             <div className="flex flex-col items-center flex-1 min-w-0">
               <div className="w-6 h-6 xs:w-7 xs:h-7 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold mb-1 sm:mb-2 text-xs sm:text-base">
@@ -652,15 +1223,16 @@ export default function OfferPricePage() {
         </div>
 
         {/* Mobile-First Single Column Layout */}
-        <div className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] gap-2 sm:gap-3 lg:gap-4 lg:items-start">
+          <div className="space-y-2 sm:space-y-3">
           {/* 1. Itinerary Card - Expandable (matches FlightSearchInterface search button container) */}
           <div className="bg-white dark:bg-neutral-950 border-0 sm:border sm:rounded-lg shadow-none sm:shadow-sm overflow-hidden">
             {/* Header - Always visible */}
             <button
               onClick={() => setIsFlightSummaryExpanded(!isFlightSummaryExpanded)}
-              className="w-full px-3 py-3 sm:p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                 Itinerary
               </h2>
               <ChevronDown
@@ -670,7 +1242,7 @@ export default function OfferPricePage() {
 
             {/* Content - Collapsible */}
             {isFlightSummaryExpanded && (
-              <div className="p-3 sm:p-6">
+              <div className="p-3 sm:p-4">
                 {/* Outbound Journey */}
                 {renderFlightSegment(outboundSegments, 'Outbound Journey')}
 
@@ -682,10 +1254,13 @@ export default function OfferPricePage() {
 
           {/* 3. Traveller Details Card (matches FlightSearchInterface search button container) */}
           <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm overflow-hidden">
-            <div className="p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+            <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                 Traveller Details
               </h2>
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                Enter passenger details exactly as shown on travel documents.
+              </p>
             </div>
 
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -696,6 +1271,24 @@ export default function OfferPricePage() {
                   paxData.firstName && paxData.lastName && paxData.dob && paxData.gender
                 const dobRange = getDobRange(passenger.paxType)
                 const age = calculateAge(paxData.dob, passenger.paxType)
+                const eligibleTravellers = savedTravellers.filter((traveller) => {
+                  if (!traveller.ptc) return true
+                  return traveller.ptc.toLowerCase() === passenger.paxType.toLowerCase()
+                })
+                const travellerOptions = [
+                  {
+                    value: '',
+                    label: isLoadingSavedTravellers
+                      ? 'Loading saved travellers...'
+                      : eligibleTravellers.length > 0
+                        ? 'Select Traveller From List'
+                        : 'No saved traveller found',
+                  },
+                  ...eligibleTravellers.map((traveller) => ({
+                    value: traveller.id,
+                    label: `${traveller.givenName} ${traveller.surname}`.trim(),
+                  })),
+                ]
 
                 // Initialize with default nationality and paxType when expanding
                 if (isExpanded && (!paxData.nationality || !paxData.paxType)) {
@@ -705,40 +1298,71 @@ export default function OfferPricePage() {
                 return (
                   <div key={passenger.index} className="bg-white dark:bg-neutral-950">
                     {/* Passenger Header - Always visible */}
-                    <button
-                      onClick={() => setExpandedPassenger(isExpanded ? null : passenger.index)}
-                      className="w-full px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
+                    <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          Passenger {passenger.paxNumber} {passenger.paxType}
-                        </span>
-                        {passenger.paxType === 'Child' && age !== null && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Age: {age}
-                          </span>
-                        )}
-                        {isFilled && (
-                          <span className="text-green-600 dark:text-green-400 text-xs">
-                            ✓ Completed
-                          </span>
-                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold tracking-tight text-gray-900 dark:text-white">
+                            Passenger {passenger.paxNumber}
+                          </p>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[11px] font-semibold rounded-full">
+                              {passenger.paxType}
+                            </span>
+                            {passenger.paxType === 'Child' && age !== null && (
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                Age: {age}
+                              </span>
+                            )}
+                            {isFilled && (
+                              <span className="text-[11px] font-medium text-green-600 dark:text-green-400">
+                                Completed
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
-                          Select Traveller From List
-                        </span>
+                      <div
+                        className="w-40 sm:w-64 max-w-[56%] flex-shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <SimpleDropdown
+                          id={`traveller-select-${passenger.index}`}
+                          value={selectedTravellerByPassenger[passenger.index] || ''}
+                          options={travellerOptions}
+                          onChange={(value) => {
+                            setSelectedTravellerByPassenger((prev) => ({
+                              ...prev,
+                              [passenger.index]: value,
+                            }))
+                            if (value) {
+                              applySavedTravellerToPassenger(
+                                passenger.index,
+                                passenger.paxType,
+                                value,
+                              )
+                            }
+                          }}
+                          disabled={isLoadingSavedTravellers || eligibleTravellers.length === 0}
+                          placeholder="Select Traveller From List"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedPassenger(isExpanded ? null : passenger.index)}
+                        className="flex items-center justify-center p-1 rounded text-primary hover:bg-primary/10 transition-colors"
+                        aria-label={isExpanded ? 'Collapse passenger form' : 'Expand passenger form'}
+                      >
                         <ChevronDown
                           className={`w-4 h-4 sm:w-5 sm:h-5 text-primary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                         />
-                      </div>
-                    </button>
+                      </button>
+                    </div>
 
                     {/* Passenger Form - Collapsible */}
                     {isExpanded && (
-                      <div className="px-3 sm:px-6 pb-3 sm:pb-6 space-y-3 sm:space-y-6">
+                      <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1.5 sm:pt-2 space-y-3 sm:space-y-4">
                         {/* Personal Information */}
-                        <div className="space-y-4 sm:space-y-4">
+                        <div className="space-y-3 sm:space-y-3 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3 sm:p-4">
                           <div className="grid grid-cols-1 gap-3 sm:gap-4">
                             <div>
                               <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -748,6 +1372,7 @@ export default function OfferPricePage() {
                                 <input
                                   type="text"
                                   placeholder="FIRST NAME"
+                                  list="recent-first-names"
                                   className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent uppercase text-sm"
                                   value={paxData.firstName || ''}
                                   onChange={(e) => {
@@ -758,6 +1383,13 @@ export default function OfferPricePage() {
                                       ...passengerData,
                                       [passenger.index]: { ...paxData, firstName: value },
                                     })
+                                  }}
+                                  onBlur={(e) => {
+                                    const v = e.target.value.trim().toUpperCase()
+                                    if (v)
+                                      setRecentFirstNames((prev) =>
+                                        saveRecentToStorage(RECENT_FIRST_NAMES_KEY, v, prev),
+                                      )
                                   }}
                                 />
                                 {paxData.firstName && (
@@ -778,6 +1410,7 @@ export default function OfferPricePage() {
                                 <input
                                   type="text"
                                   placeholder="LAST NAME"
+                                  list="recent-last-names"
                                   className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent uppercase text-sm"
                                   value={paxData.lastName || ''}
                                   onChange={(e) => {
@@ -788,6 +1421,13 @@ export default function OfferPricePage() {
                                       ...passengerData,
                                       [passenger.index]: { ...paxData, lastName: value },
                                     })
+                                  }}
+                                  onBlur={(e) => {
+                                    const v = e.target.value.trim().toUpperCase()
+                                    if (v)
+                                      setRecentLastNames((prev) =>
+                                        saveRecentToStorage(RECENT_LAST_NAMES_KEY, v, prev),
+                                      )
                                   }}
                                 />
                                 {paxData.lastName && (
@@ -947,6 +1587,7 @@ export default function OfferPricePage() {
                                   <input
                                     type="text"
                                     placeholder="PASSPORT NUMBER"
+                                    list="recent-passport-numbers"
                                     className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent uppercase text-sm"
                                     value={paxData.passportNumber || ''}
                                     onChange={(e) =>
@@ -958,6 +1599,17 @@ export default function OfferPricePage() {
                                         },
                                       })
                                     }
+                                    onBlur={(e) => {
+                                      const v = e.target.value.trim().toUpperCase()
+                                      if (v)
+                                        setRecentPassportNumbers((prev) =>
+                                          saveRecentToStorage(
+                                            RECENT_PASSPORT_NUMBERS_KEY,
+                                            v,
+                                            prev,
+                                          ),
+                                        )
+                                    }}
                                   />
                                   {paxData.passportNumber && (
                                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none" />
@@ -993,20 +1645,25 @@ export default function OfferPricePage() {
 
                         {/* Contact Information - Only for first passenger */}
                         {passenger.index === 0 && (
-                          <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                              Contact Information
-                            </h3>
+                          <div className="space-y-3 rounded-lg border border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/5 p-3 sm:p-4">
+                            <div className="border-b border-gray-200/80 dark:border-white/10 pb-2.5">
+                              <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                                Contact Information
+                              </h3>
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Used for booking updates and airline notifications.
+                              </p>
+                            </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 mb-1.5">
                                   Phone Number <span className="text-red-500">*</span>
                                 </label>
                                 <div className="flex gap-2">
                                   {paxData.phone ? (
                                     // Show display with dropdown arrow when phone is filled
-                                    <div className="w-32 px-3 py-2 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm flex items-center justify-between">
+                                    <div className="w-32 px-3 h-10 border border-gray-200/90 dark:border-white/10 rounded-lg bg-white/80 dark:bg-black/20 text-gray-900 dark:text-white text-sm flex items-center justify-between">
                                       <div className="flex items-center gap-2">
                                         {PHONE_COUNTRIES.find(
                                           (c) => c.phoneCode === (paxData.phoneCode || '+880'),
@@ -1022,7 +1679,7 @@ export default function OfferPricePage() {
                                             style={{ width: '1.25rem', height: '1.25rem' }}
                                           />
                                         )}
-                                        <span className="text-sm">
+                                        <span className="text-sm font-medium">
                                           {paxData.phoneCode || '+880'}
                                         </span>
                                       </div>
@@ -1047,7 +1704,8 @@ export default function OfferPricePage() {
                                     <input
                                       type="tel"
                                       placeholder="01XXXXXXXXX"
-                                      className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                      list="recent-phones"
+                                      className="tf-no-datalist-arrow w-full h-10 px-3 border border-gray-200/90 dark:border-white/10 rounded-lg bg-white/80 dark:bg-black/20 text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                       value={paxData.phone || ''}
                                       onChange={(e) => {
                                         const value = e.target.value.replace(/\D/g, '')
@@ -1064,9 +1722,10 @@ export default function OfferPricePage() {
                                           )
                                       }}
                                     />
-                                    {paxData.phone && (
-                                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none" />
-                                    )}
+                                    <span
+                                      aria-hidden="true"
+                                      className="pointer-events-none absolute right-1 top-1 bottom-1 w-6 rounded bg-white/80 dark:bg-black/20"
+                                    />
                                     {paxData.phone && paxData.phone.length < 10 && (
                                       <p className="text-xs text-red-500 mt-1">
                                         Phone number must be at least 10 digits
@@ -1077,14 +1736,15 @@ export default function OfferPricePage() {
                               </div>
 
                               <div>
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 mb-1.5">
                                   Email <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative">
                                   <input
                                     type="email"
                                     placeholder="example@email.com"
-                                    className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                                    list="recent-emails"
+                                    className="tf-no-datalist-arrow w-full h-10 px-3 border border-gray-200/90 dark:border-white/10 rounded-lg bg-white/80 dark:bg-black/20 text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                     value={paxData.email || ''}
                                     onChange={(e) => {
                                       const value = e.target.value.trim()
@@ -1101,9 +1761,10 @@ export default function OfferPricePage() {
                                         )
                                     }}
                                   />
-                                  {paxData.email && (
-                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none" />
-                                  )}
+                                  <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute right-1 top-1 bottom-1 w-6 rounded bg-white/80 dark:bg-black/20"
+                                  />
                                   {paxData.email &&
                                     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paxData.email) && (
                                       <p className="text-xs text-red-500 mt-1">
@@ -1114,7 +1775,7 @@ export default function OfferPricePage() {
                               </div>
                             </div>
 
-                            <label className="flex items-center gap-3 cursor-pointer has-[:checked]:[&_.offer-price-check-icon]:opacity-100">
+                            <label className="flex items-center gap-3 cursor-pointer has-[:checked]:[&_.offer-price-check-icon]:opacity-100 rounded-lg px-1 py-1">
                               <input type="checkbox" className="sr-only peer" />
                               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 peer-checked:border-primary peer-checked:bg-primary transition-colors relative">
                                 <Check
@@ -1122,28 +1783,13 @@ export default function OfferPricePage() {
                                   strokeWidth={3}
                                 />
                               </span>
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Add an optional phone number
                               </span>
                             </label>
                           </div>
                         )}
 
-                        {/* Save Traveller */}
-                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <label className="flex items-center gap-3 cursor-pointer has-[:checked]:[&_.offer-price-check-icon]:opacity-100">
-                            <input type="checkbox" className="sr-only peer" />
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 peer-checked:border-primary peer-checked:bg-primary transition-colors relative">
-                              <Check
-                                className="offer-price-check-icon h-3 w-3 text-white opacity-0 absolute pointer-events-none"
-                                strokeWidth={3}
-                              />
-                            </span>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              Save this to my Traveller list
-                            </span>
-                          </label>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -1154,13 +1800,13 @@ export default function OfferPricePage() {
 
           {/* 2. Policy Section - Separate Card (matches FlightSearchInterface search button container) */}
           <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm overflow-hidden">
-            <div className="p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Policy</h3>
+            <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Policy</h3>
             </div>
 
-            <div className="p-3 sm:p-6">
+            <div className="p-3 sm:p-4">
               {/* Tabs */}
-              <div className="flex gap-2 sm:gap-4 border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto">
+              <div className="flex gap-2 sm:gap-3 border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('baggage')}
                   className={`pb-3 px-2 sm:px-4 border-b-2 transition-colors whitespace-nowrap ${
@@ -1259,7 +1905,7 @@ export default function OfferPricePage() {
               )}
 
               {activeTab === 'cancellation' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {offer.penalty.refundPenaltyList.map((penalty, idx) => (
                     <div key={idx}>
                       <div className="flex items-center gap-2 mb-2">
@@ -1290,7 +1936,7 @@ export default function OfferPricePage() {
               )}
 
               {activeTab === 'dateChange' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {offer.penalty.exchangePenaltyList.map((penalty, idx) => (
                     <div key={idx}>
                       <div className="flex items-center gap-2 mb-2">
@@ -1321,14 +1967,14 @@ export default function OfferPricePage() {
               )}
 
               {activeTab === 'fareRules' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {fareRulesLoading && (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     </div>
                   )}
                   {fareRulesError && !fareRulesLoading && (
-                    <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 space-y-3">
+                      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 space-y-2.5">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400" />
                         <p className="text-sm text-red-700 dark:text-red-300">{fareRulesError}</p>
@@ -1358,7 +2004,7 @@ export default function OfferPricePage() {
                         )
                       }
                       return (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {items.map((item, idx) => (
                             <div
                               key={idx}
@@ -1387,129 +2033,22 @@ export default function OfferPricePage() {
             </div>
           </div>
 
-          {/* 4. Select SSR Button - Centered, Full Width */}
           <button
             onClick={() => {
-              // Validate all passengers data
-              const errors: string[] = []
-              const passengers = getAllPassengers()
-
-              passengers.forEach((pax) => {
-                const paxData = passengerData[pax.index]
-                const passengerLabel = `Passenger ${pax.paxNumber} (${pax.paxType})`
-
-                if (!paxData?.firstName || paxData.firstName.trim() === '') {
-                  errors.push(`${passengerLabel}: First name is required`)
-                }
-                if (!paxData?.lastName || paxData.lastName.trim() === '') {
-                  errors.push(`${passengerLabel}: Last name is required`)
-                }
-                if (!paxData?.dob) {
-                  errors.push(`${passengerLabel}: Date of birth is required`)
-                } else {
-                  // Validate DOB is within allowed range for pax type
-                  const dobRange = getDobRange(pax.paxType)
-                  const dob = new Date(paxData.dob)
-                  if (dobRange.min && dobRange.max) {
-                    const minDate = new Date(dobRange.min)
-                    const maxDate = new Date(dobRange.max)
-                    if (dob < minDate || dob > maxDate) {
-                      if (pax.paxType === 'Adult') {
-                        errors.push(`${passengerLabel}: Must be 12+ years old at last arrival`)
-                      } else if (pax.paxType === 'Child') {
-                        errors.push(
-                          `${passengerLabel}: Must be 2 years up to 11 years 11 months 30 days at last arrival`,
-                        )
-                      } else if (pax.paxType === 'Infant') {
-                        errors.push(`${passengerLabel}: Must be under 2 years old at last arrival`)
-                      }
-                    }
-                  }
-                }
-                if (!paxData?.gender) {
-                  errors.push(`${passengerLabel}: Gender is required`)
-                }
-                if (!paxData?.nationality) {
-                  errors.push(`${passengerLabel}: Nationality is required`)
-                }
-                // Infants: require associated adult and that adult has name
-                if (pax.paxType === 'Infant') {
-                  const assocIndex = paxData?.associatedAdultIndex
-                  if (assocIndex === undefined || assocIndex === '') {
-                    errors.push(`${passengerLabel}: Associated adult passenger is required`)
-                  } else {
-                    const adultData = passengerData[Number(assocIndex)]
-                    if (!adultData?.firstName?.trim() || !adultData?.lastName?.trim()) {
-                      errors.push(
-                        `${passengerLabel}: Please complete the associated adult's name first (Passenger ${Number(assocIndex) + 1})`,
-                      )
-                    }
-                  }
-                }
-
-                if (passportRequired) {
-                  if (!paxData?.passportNumber || paxData.passportNumber.trim() === '') {
-                    errors.push(`${passengerLabel}: Passport number is required`)
-                  }
-                  if (!paxData?.passportExpiry) {
-                    errors.push(`${passengerLabel}: Passport expiry date is required`)
-                  }
-                }
-
-                // Validate contact info for first passenger
-                if (pax.index === 0) {
-                  if (!paxData?.phone || paxData.phone.trim() === '') {
-                    errors.push(`${passengerLabel}: Phone number is required`)
-                  }
-                  if (!paxData?.email || paxData.email.trim() === '') {
-                    errors.push(`${passengerLabel}: Email is required`)
-                  }
-                }
-              })
-
-              if (errors.length > 0) {
-                setValidationErrors(errors)
-                // Scroll to errors
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              } else {
-                setValidationErrors([])
-                // All validation passed - store data and proceed
-                console.log('✅ All passengers data validated:', passengerData)
-
-                // Store all data in sessionStorage for SSR page
-                sessionStorage.setItem('passengerData', JSON.stringify(passengerData))
-                sessionStorage.setItem('offerId', offerId || '')
-                sessionStorage.setItem('traceId', traceId || '')
-                sessionStorage.setItem('availableSSR', JSON.stringify(availableSSR))
-                sessionStorage.setItem('seatsAvailable', JSON.stringify(seatsAvailable))
-                sessionStorage.setItem('serviceListAvailable', JSON.stringify(serviceListAvailable))
-                sessionStorage.setItem('passportRequired', JSON.stringify(passportRequired))
-
-                // Store offer details for Review & Book page
-                if (offer) {
-                  sessionStorage.setItem(
-                    'offerDetails',
-                    JSON.stringify({
-                      currency: offer.price.totalPayable.curreny,
-                      totalPrice: offer.price.totalPayable.total,
-                      paxSegmentList: offer.paxSegmentList,
-                      fareDetailList: offer.fareDetailList,
-                    }),
-                  )
-                }
-
-                // Navigate to SSR page
-                router.push(`/ssr?traceId=${traceId}&offerId=${offerId}`)
-              }
+              void handleSelectSSR()
             }}
-            className="w-full px-3 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-base"
+            disabled={isSyncingTravellers}
+            className="w-full px-3 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-sm sm:text-base"
           >
-            Select SSR
+            {isSyncingTravellers ? 'Saving Travellers...' : 'Select SSR'}
             <ArrowRight className="w-5 h-5" />
           </button>
 
-          {/* 5. Page Expiry Timer Card (matches FlightSearchInterface search button container) */}
-          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-6">
+          </div>
+
+          <aside className="space-y-2 sm:space-y-3 lg:sticky lg:top-20 w-full lg:justify-self-end">
+          {/* 4. Page Expiry Timer Card (matches FlightSearchInterface search button container) */}
+          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-4">
             <div className="flex items-center gap-2 text-red-500 mb-2">
               <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="text-xs sm:text-sm font-medium">This page will expires in</span>
@@ -1526,111 +2065,115 @@ export default function OfferPricePage() {
           </div>
 
           {/* 6. Fare Summary Card (matches FlightSearchInterface search button container) */}
-          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-6">
-            <div className="flex items-center gap-2 text-primary mb-4">
-              <svg
-                className="w-4 h-4 sm:w-5 sm:h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                Fare Summary
-              </h3>
+          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 text-primary">
+                <svg
+                  className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <h3 className="text-[17px] font-semibold tracking-tight text-gray-900 dark:text-white">
+                  Fare Summary
+                </h3>
+              </div>
+              <span className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                BDT
+              </span>
             </div>
-
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-1.5">
               {/* Passenger */}
-              <div className="flex justify-between pb-2 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Passenger
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-[13px] font-semibold text-gray-900 dark:text-white">
                   Adult
                 </span>
               </div>
 
               {/* Base Fare */}
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Base Fare
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   BDT {offer.fareDetailList[0]?.fareDetail.baseFare.toLocaleString() || 0}
                 </span>
               </div>
 
               {/* Taxes */}
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Taxes</span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">Taxes</span>
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   BDT {offer.fareDetailList[0]?.fareDetail.tax.toLocaleString() || 0}
                 </span>
               </div>
 
               {/* Other Charge */}
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Other Charge
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   BDT {offer.fareDetailList[0]?.fareDetail.otherFee || 0}
                 </span>
               </div>
 
               {/* Discount */}
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Discount
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   BDT {offer.fareDetailList[0]?.fareDetail.discount.toLocaleString() || 0}
                 </span>
               </div>
 
               {/* Pax Count */}
-              <div className="flex justify-between pb-2 sm:pb-3 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Pax count
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   {offer.fareDetailList[0]?.fareDetail.paxCount || 1}
                 </span>
               </div>
 
               {/* Total AIT & VAT */}
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Total AIT & VAT
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">
                   BDT {offer.price.totalVAT.total.toLocaleString()}
                 </span>
               </div>
 
               {/* Total Discount */}
-              <div className="flex justify-between pb-2 sm:pb-3 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Total Discount
                 </span>
-                <span className="text-xs sm:text-sm text-green-600 dark:text-green-400">
+                <span className="text-[13px] font-semibold text-green-600 dark:text-green-400">
                   -BDT {offer.price.discount.total.toLocaleString()}
                 </span>
               </div>
 
               {/* Grand Total */}
-              <div className="flex justify-between pt-2">
-                <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              <div className="flex items-center justify-between pt-1.5">
+                <span className="text-[17px] font-semibold tracking-tight text-gray-900 dark:text-white">
                   Grand Total
                 </span>
-                <span className="text-sm sm:text-base font-bold text-primary">
+                <span className="text-[19px] font-bold tracking-tight text-primary">
                   BDT {offer.price.totalPayable.total.toLocaleString()}
                 </span>
               </div>
@@ -1638,10 +2181,10 @@ export default function OfferPricePage() {
           </div>
 
           {/* 7. Service Fee Card (matches FlightSearchInterface search button container) */}
-          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-6">
-            <div className="flex items-center gap-2 text-primary mb-4">
+          <div className="bg-white dark:bg-neutral-950 border-0 border-t border-gray-200/80 dark:border-white/10 sm:border sm:rounded-lg shadow-none sm:shadow-sm p-3 sm:p-4">
+            <div className="flex items-center gap-2 text-primary mb-3 pb-2 border-b border-gray-100 dark:border-gray-800">
               <svg
-                className="w-4 h-4 sm:w-5 sm:h-5"
+                className="w-4 h-4 sm:w-[18px] sm:h-[18px]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1653,29 +2196,29 @@ export default function OfferPricePage() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-[17px] font-semibold tracking-tight text-gray-900 dark:text-white">
                 Service Fee
               </h3>
             </div>
 
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Void Fee
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">BDT 250</span>
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">BDT 250</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Refund Fee
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">BDT 250</span>
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">BDT 250</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-[13px] text-gray-600 dark:text-gray-400">
                   Exchange Fee
                 </span>
-                <span className="text-xs sm:text-sm text-gray-900 dark:text-white">BDT 250</span>
+                <span className="text-[13px] font-medium text-gray-900 dark:text-white">BDT 250</span>
               </div>
             </div>
           </div>
@@ -1698,6 +2241,7 @@ export default function OfferPricePage() {
               </div>
             </div>
           )}
+        </aside>
         </div>
       </div>
     </div>
