@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { withAuth } from 'next-auth/middleware'
+import { withAuth, type NextRequestWithAuth } from 'next-auth/middleware'
 
 import { DASHBOARD_ROUTES, ROLES, type RoleType } from '@/lib/utils/constants'
 
 export const proxy = withAuth(
-  function proxy(req) {
+  function proxy(req: NextRequestWithAuth) {
     const token = req.nextauth.token
     const { pathname, searchParams } = req.nextUrl
     const isInactive = token && (token as { isActive?: boolean }).isActive === false
@@ -42,7 +42,9 @@ export const proxy = withAuth(
 
     // Redirect unauthenticated users to auth page for protected routes
     if (!token) {
-      return NextResponse.redirect(new URL('/auth', req.url))
+      const redirectUrl = new URL('/auth', req.url)
+      redirectUrl.searchParams.set('callbackUrl', req.nextUrl.href)
+      return NextResponse.redirect(redirectUrl)
     }
 
     if (isInactive && pathname !== '/auth') {
@@ -88,6 +90,10 @@ export const proxy = withAuth(
     return NextResponse.next()
   },
   {
+    secret: (process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET)!,
+    pages: {
+      signIn: '/auth',
+    },
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl

@@ -12,7 +12,6 @@ import { useForm } from 'react-hook-form'
 import AuthSlideshow from '@/components/auth/AuthSlideshow'
 import FirebaseStatus from '@/components/debug/FirebaseStatus'
 import { Header } from '@/components/layout/header'
-import { Sidebar } from '@/components/layout/sidebar'
 // Removed unused Card imports
 import { DynamicButton } from '@/components/ui/dynamic-theme-components'
 import {
@@ -290,26 +289,6 @@ export default function AuthPage() {
 
       {/* Main content with sidebar for logged-in users */}
       <div className="flex pt-14 min-h-[calc(100vh-3.5rem)] relative z-10">
-        {/* Desktop Sidebar for logged-in users */}
-        {session?.user && (
-          <div className="hidden md:block h-[calc(100vh-3.5rem)]">
-            <Sidebar />
-          </div>
-        )}
-
-        {/* Mobile Sidebar Overlay for logged-in users */}
-        {session?.user && isMobileSidebarOpen && (
-          <div className="fixed inset-0 z-50 md:hidden" onClick={closeMobileSidebar}>
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-            {/* Sidebar */}
-            <div className="relative h-full w-64">
-              <Sidebar isMobile={true} onClose={closeMobileSidebar} className="h-full" />
-            </div>
-          </div>
-        )}
-
         {/* Mobile Sidebar Overlay for non-logged-in users */}
         {!session?.user && isMobileSidebarOpen && (
           <div className="fixed inset-0 z-50 md:hidden" onClick={closeMobileSidebar}>

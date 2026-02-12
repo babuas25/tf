@@ -4,10 +4,11 @@ import { LogOut, Menu, ChevronDown, UserCircle, Sun, Moon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 
 import { useTheme } from '@/components/providers/theme-provider'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTheme as useThemeContext } from '@/context/theme-context'
 import { animations } from '@/lib/design-tokens'
 import { useDynamicThemeColors } from '@/lib/dynamic-theme-colors'
@@ -35,27 +36,8 @@ export function Header({
   // State for dropdown visibility
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false)
-  const userDropdownRef = useRef<HTMLDivElement>(null)
-  const mobileDropdownRef = useRef<HTMLDivElement>(null)
 
   const userRole = (session?.user as { role?: string } | undefined)?.role
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
-        setIsUserDropdownOpen(false)
-      }
-      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
-        setIsMobileDropdownOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   return (
     <header
@@ -130,56 +112,57 @@ export function Header({
           {showUserActions && status === 'loading' ? (
             <div className="h-8 w-8 bg-white/20 dark:bg-white/10 rounded-full animate-pulse"></div>
           ) : showUserActions && session?.user ? (
-            <div className="relative" ref={userDropdownRef}>
-              {/* User Icon Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-white/20 dark:hover:bg-white/10 border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg"
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                aria-label={`${isUserDropdownOpen ? 'Close' : 'Open'} user menu`}
-                aria-expanded={isUserDropdownOpen}
-              >
-                <div
-                  className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-white border border-white/20',
-                    themeColors.primary,
-                  )}
+            <Popover open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-white/20 dark:hover:bg-white/10 border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg"
+                  aria-label={`${isUserDropdownOpen ? 'Close' : 'Open'} user menu`}
+                  aria-expanded={isUserDropdownOpen}
                 >
-                  <span className="text-xs font-medium">
-                    {session.user.name
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase() || 'U'}
-                  </span>
-                </div>
-              </Button>
-
-              {/* Dropdown Menu */}
-              {isUserDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl shadow-lg z-50 bg-white/40 dark:bg-white/30 backdrop-blur-md border border-white/30 dark:border-white/20">
-                  <div className="py-2">
-                    <div className="px-4 py-2 border-b border-white/20 dark:border-white/10">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {session.user.name}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{userRole}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setIsUserDropdownOpen(false)
-                        void signOut({ callbackUrl: '/' })
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:bg-white/10 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </button>
+                  <div
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center text-white border border-white/20',
+                      themeColors.primary,
+                    )}
+                  >
+                    <span className="text-xs font-medium">
+                      {session.user.name
+                        ?.split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .toUpperCase() || 'U'}
+                    </span>
                   </div>
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                align="end"
+                sideOffset={10}
+                className="w-64 p-0 rounded-xl border border-primary/20 bg-white dark:bg-neutral-900 shadow-xl"
+              >
+                <div className="py-2">
+                  <div className="px-4 py-3 border-b border-gray-200/80 dark:border-white/10">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{userRole}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsUserDropdownOpen(false)
+                      void signOut({ callbackUrl: '/' })
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
                 </div>
-              )}
-            </div>
+              </PopoverContent>
+            </Popover>
           ) : (
             /* Auth Buttons for non-authenticated users */
             <div className="flex items-center space-x-2">
@@ -206,41 +189,41 @@ export function Header({
               </div>
 
               {/* Mobile: Show dropdown */}
-              <div className="md:hidden relative" ref={mobileDropdownRef}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-1 hover:bg-white/20 dark:hover:bg-white/10 border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg"
-                  onClick={() => setIsMobileDropdownOpen(!isMobileDropdownOpen)}
-                  aria-label={`${isMobileDropdownOpen ? 'Close' : 'Open'} authentication menu`}
-                  aria-expanded={isMobileDropdownOpen}
-                >
-                  <UserCircle className="h-4 w-4 text-gray-900 dark:text-gray-100" />
-                  <ChevronDown className="h-3 w-3 text-gray-900 dark:text-gray-100" />
-                </Button>
+              <Popover open={isMobileDropdownOpen} onOpenChange={setIsMobileDropdownOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="md:hidden flex items-center gap-1 hover:bg-white/20 dark:hover:bg-white/10 border border-white/30 dark:border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg"
+                    aria-label={`${isMobileDropdownOpen ? 'Close' : 'Open'} authentication menu`}
+                    aria-expanded={isMobileDropdownOpen}
+                  >
+                    <UserCircle className="h-4 w-4 text-gray-900 dark:text-gray-100" />
+                    <ChevronDown className="h-3 w-3 text-gray-900 dark:text-gray-100" />
+                  </Button>
+                </PopoverTrigger>
 
-                {/* Dropdown Menu */}
-                {isMobileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 rounded-xl shadow-lg z-50 bg-white/40 dark:bg-white/30 backdrop-blur-md border border-white/30 dark:border-white/20">
-                    <div className="py-1">
-                      <Link
-                        href="/auth"
-                        className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-white/10 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
-                        onClick={() => setIsMobileDropdownOpen(false)}
-                      >
-                        Sign In
-                      </Link>
-                      <Link
-                        href="/auth"
-                        className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-white/10 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
-                        onClick={() => setIsMobileDropdownOpen(false)}
-                      >
-                        Registration
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <PopoverContent
+                  align="end"
+                  sideOffset={10}
+                  className="w-52 p-1 rounded-xl border border-primary/20 bg-white dark:bg-neutral-900 shadow-xl"
+                >
+                  <Link
+                    href="/auth"
+                    className="block px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    onClick={() => setIsMobileDropdownOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth"
+                    className="block px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    onClick={() => setIsMobileDropdownOpen(false)}
+                  >
+                    Registration
+                  </Link>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
         </div>
