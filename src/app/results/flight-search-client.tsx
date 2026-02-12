@@ -27,6 +27,23 @@ function getFutureDateString(daysFromToday: number = 7): string {
   return `${year}-${month}-${day}`
 }
 
+function shiftDateString(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  const year = dt.getFullYear()
+  const month = String(dt.getMonth() + 1).padStart(2, '0')
+  const day = String(dt.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function getIsoDateTimestamp(dateStr: string): number | null {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return Date.UTC(y, m - 1, d)
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -229,6 +246,73 @@ export function FlightSearchPageClient() {
     router.push(`/offer-price?traceId=${encodeURIComponent(traceId)}&offerId=${encodeURIComponent(outboundId)}&offerId=${encodeURIComponent(returnId)}`)
   }
 
+  const handleDateShift = (days: number) => {
+    setCurrentSearch((prev) => {
+      const next: SearchData = {
+        ...prev,
+        departureDate: shiftDateString(prev.departureDate, days),
+      }
+
+      if (prev.returnDate) {
+        next.returnDate = shiftDateString(prev.returnDate, days)
+      }
+
+      if (prev.segments?.length) {
+        next.segments = prev.segments.map((seg) => ({
+          ...seg,
+          departureDate: shiftDateString(seg.departureDate, days),
+        }))
+        const first = next.segments[0]
+        if (first?.departureDate) {
+          next.departureDate = first.departureDate
+        }
+      }
+
+      return next
+    })
+  }
+
+  const handleDateSelect = (selectedDate: string) => {
+    setCurrentSearch((prev) => {
+      const currentBaseDate =
+        prev.segments?.[0]?.departureDate || prev.departureDate
+      const currentTs = getIsoDateTimestamp(currentBaseDate)
+      const nextTs = getIsoDateTimestamp(selectedDate)
+
+      if (currentTs === null || nextTs === null) {
+        return {
+          ...prev,
+          departureDate: selectedDate,
+        }
+      }
+
+      const diffDays = Math.round((nextTs - currentTs) / 86400000)
+      if (diffDays === 0) return prev
+
+      const next: SearchData = {
+        ...prev,
+        departureDate: selectedDate,
+      }
+
+      if (prev.returnDate) {
+        next.returnDate = shiftDateString(prev.returnDate, diffDays)
+      }
+
+      if (prev.segments?.length) {
+        next.segments = prev.segments.map((seg) => ({
+          ...seg,
+          departureDate: shiftDateString(seg.departureDate, diffDays),
+        }))
+        const first = next.segments[0]
+        if (first?.departureDate) {
+          next.departureDate = first.departureDate
+        }
+      }
+
+      return next
+    })
+  }
+
   const toggleSearchForm = () => {
     setIsSearchExpanded(!isSearchExpanded)
   }
@@ -287,6 +371,8 @@ export function FlightSearchPageClient() {
                   {urlParamsParsed && (
                     <FlightResultsContainer 
                       searchData={currentSearch as SearchFormData}
+                      onDateShift={handleDateShift}
+                      onDateSelect={handleDateSelect}
                       onFlightSelect={(offerId: string) => {
                         console.log('Selected flight ID:', offerId)
                         // TODO: Navigate to booking page or show booking modal

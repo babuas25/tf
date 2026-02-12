@@ -14,6 +14,7 @@ import { defaultFilters } from '@/types/flight/ui/filter.types'
 import type { SearchFormData } from '@/types/flight/ui/search-form.types'
 
 import { AirlineSortBar } from './AirlineSortBar'
+import { DateShiftNavigator } from './DateShiftNavigator'
 import { FlightFilterSidebar } from './filters'
 import { FlightResultsHeader } from './FlightResultsHeader'
 import { FlightResultsList } from './FlightResultsList'
@@ -53,12 +54,42 @@ function getSearchRequestKey(data: SearchFormData): string {
 
 interface FlightResultsContainerProps {
   searchData: SearchFormData
+  onDateShift?: (days: number) => void
+  onDateSelect?: (date: string) => void
   onFlightSelect?: (offerId: string) => void
   onModifySearch?: () => void
   onBookNow?: (outboundId: string, returnId: string, traceId: string) => void
 }
 
-export function FlightResultsContainer({ searchData, onFlightSelect, onModifySearch, onBookNow }: FlightResultsContainerProps) {
+interface CachedSearchResult {
+  offers: FlightOffer[]
+  twoOneway: {
+    obOffers: FlightOffer[]
+    ibOffers: FlightOffer[]
+  } | null
+  traceId: string | null
+  error: string | null
+}
+
+function formatResultsDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  const dt = new Date(y, m - 1, d)
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(dt)
+}
+
+export function FlightResultsContainer({
+  searchData,
+  onDateShift,
+  onDateSelect,
+  onFlightSelect,
+  onModifySearch,
+  onBookNow,
+}: FlightResultsContainerProps) {
   const [offers, setOffers] = useState<FlightOffer[]>([])
   const [twoOneway, setTwoOneway] = useState<{
     obOffers: FlightOffer[]
@@ -75,10 +106,30 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
   // Separate sort keys for two-oneway columns
   const [obSortKey, setObSortKey] = useState<ResultsSortKey>('none')
   const [ibSortKey, setIbSortKey] = useState<ResultsSortKey>('none')
+  const searchCacheRef = useRef<Map<string, CachedSearchResult>>(new Map())
+
+  const setCachedResult = useCallback((key: string, value: CachedSearchResult) => {
+    const cache = searchCacheRef.current
+    cache.set(key, value)
+    if (cache.size > 30) {
+      const oldestKey = cache.keys().next().value
+      if (oldestKey) cache.delete(oldestKey)
+    }
+  }, [])
 
   const preferredAirlineCodes = useMemo(() => {
     return parsePreferredAirlineCodes(searchData.preferredAirline ?? '')
   }, [searchData.preferredAirline])
+
+  const activeDate = useMemo(() => {
+    if (searchData.tripType === 'multicity' && searchData.segments?.length) {
+      return searchData.segments[0]?.departureDate || searchData.departureDate
+    }
+    return searchData.departureDate
+  }, [searchData.departureDate, searchData.segments, searchData.tripType])
+
+  const dateLabel = useMemo(() => formatResultsDate(activeDate), [activeDate])
+  const showDateNavigator = searchData.tripType === 'oneway'
 
   const fetchFlights = useCallback(async () => {
     // Validate search data
@@ -112,10 +163,17 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
     setTwoOneway(null)
 
     try {
+      const requestKey = getSearchRequestKey(searchData)
       const request = transformSearchToRequest(searchData)
       const response = await searchFlights(request)
 
       if (response.success && response.response) {
+        let nextOffers: FlightOffer[] = []
+        let nextTwoOneway: {
+          obOffers: FlightOffer[]
+          ibOffers: FlightOffer[]
+        } | null = null
+
         // Check if multi-city search should be displayed as TwoOneWay (domestic + 2 segments)
         const isMulticityTwoOneway = shouldDisplayAsTwoOneway(searchData)
 
@@ -123,28 +181,40 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
           // Transform multi-city offers into two-oneway format
           const transformedOffers = transformOffersToFlightOffers(response.response)
           const { obOffers, ibOffers } = transformMulticityToTwoOneway(transformedOffers)
-          setTwoOneway({ obOffers, ibOffers })
-          setOffers([])
+          nextTwoOneway = { obOffers, ibOffers }
         } else if (searchData.tripType === 'roundtrip') {
           // If API sends paired-two-oneway (specialReturnOffersGroup), render in two columns for roundtrip searches.
           const { obOffers, ibOffers } = transformOffersToTwoOnewayLists(response.response)
           const hasTwoOneway = obOffers.length > 0 || ibOffers.length > 0
 
           if (hasTwoOneway) {
-            setTwoOneway({ obOffers, ibOffers })
-            setOffers([])
+            nextTwoOneway = { obOffers, ibOffers }
           } else {
             const transformedOffers = transformOffersToFlightOffers(response.response)
-            setOffers(transformedOffers)
+            nextOffers = transformedOffers
           }
         } else {
           const transformedOffers = transformOffersToFlightOffers(response.response)
-          setOffers(transformedOffers)
+          nextOffers = transformedOffers
         }
 
+        setOffers(nextOffers)
+        setTwoOneway(nextTwoOneway)
         setTraceId(response.response.traceId)
+        setCachedResult(requestKey, {
+          offers: nextOffers,
+          twoOneway: nextTwoOneway,
+          traceId: response.response.traceId,
+          error: null,
+        })
       } else {
         setError('No flights found for your search criteria')
+        setCachedResult(requestKey, {
+          offers: [],
+          twoOneway: null,
+          traceId: null,
+          error: 'No flights found for your search criteria',
+        })
       }
     } catch (err) {
       console.error('Flight search error:', err)
@@ -152,13 +222,27 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
     } finally {
       setLoading(false)
     }
-  }, [searchData])
+  }, [searchData, setCachedResult])
 
   // Single request per search: only one POST /api/flight/search per distinct search.
   // React (e.g. Strict Mode) may run this effect twice with the same searchData; we send the request only once.
   const lastFetchKeyRef = useRef<string | null>(null)
   useEffect(() => {
     const key = getSearchRequestKey(searchData)
+    const cachedResult = searchCacheRef.current.get(key)
+    if (cachedResult) {
+      setOffers(cachedResult.offers)
+      setTwoOneway(cachedResult.twoOneway)
+      setTraceId(cachedResult.traceId)
+      setError(cachedResult.error)
+      setLoading(false)
+      lastFetchKeyRef.current = key
+      if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+        console.log('[FlightResults] Cache hit. Reusing existing results without API call.')
+      }
+      return
+    }
+
     if (lastFetchKeyRef.current === key) {
       // Duplicate run (same search) → do not send another request.
       if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -538,24 +622,36 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
               </div>
             )}
 
-            {/* Filters toggle - below airline filterbar, above sortbar (when sidebar collapsed) */}
+            {/* Filters + Date switch row - below airline filterbar, above sortbar (when sidebar collapsed) */}
             <div className="sidebar-expanded:hidden mb-[5px]">
-              <button
-                type="button"
-                onClick={() => setIsMobileFilterOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-neutral-950 
-                  border border-gray-200/80 dark:border-white/10 rounded-lg shadow-sm 
-                  text-sm font-medium text-gray-700 dark:text-gray-200 
-                  hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                <span>Filters</span>
-                {filteredCount < totalCount && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                    {filteredCount}
-                  </span>
+              <div className={showDateNavigator ? 'grid grid-cols-[auto_1fr] gap-2' : ''}>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-neutral-950 
+                    border border-gray-200/80 dark:border-white/10 rounded-lg shadow-sm 
+                    text-sm font-medium text-gray-700 dark:text-gray-200 
+                    hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span>Filters</span>
+                  {filteredCount < totalCount && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                      {filteredCount}
+                    </span>
+                  )}
+                </button>
+
+                {showDateNavigator && (
+                  <DateShiftNavigator
+                    dateLabel={dateLabel}
+                    dateValue={activeDate}
+                    disabled={loading}
+                    {...(onDateShift && { onDateShift })}
+                    {...(onDateSelect && { onDateSelect })}
+                  />
                 )}
-              </button>
+              </div>
             </div>
 
             {/* Sort bar (Departure, Price, Layover) - only for non-two-oneway results */}
@@ -568,7 +664,14 @@ export function FlightResultsContainer({ searchData, onFlightSelect, onModifySea
               <FlightResultsHeader
                 count={filteredCount}
                 traceId={traceId}
+                showDateNavigator={showDateNavigator}
+                dateLabel={dateLabel}
+                dateValue={activeDate}
+                onPrevDate={() => onDateShift?.(-1)}
+                onNextDate={() => onDateShift?.(1)}
+                dateNavDisabled={loading}
                 {...(onModifySearch && { onModifySearch })}
+                {...(onDateSelect && { onDateSelect })}
               />
             </div>
           </div>

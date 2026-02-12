@@ -45,10 +45,10 @@ export function Footer({ className }: FooterProps) {
   return (
     <footer className={cn('', className)}>
       <div className="w-full border-t border-white/30 dark:border-white/20 bg-white/20 dark:bg-white/10 backdrop-blur-md shadow-lg">
-        <div className="px-4 py-2 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 items-center">
-            {/* Left: Social icons */}
-            <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
+        <div className="px-4 py-2.5 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-1 sm:grid sm:grid-cols-3 sm:items-center">
+            {/* Left: Social icons (desktop/tablet only) */}
+            <div className="hidden sm:flex items-center gap-4 text-gray-600 dark:text-gray-400">
               {settings?.social?.facebook && settings.social.facebook !== '' && (
                 <Link
                   href={settings.social.facebook}
@@ -85,25 +85,25 @@ export function Footer({ className }: FooterProps) {
             </div>
 
             {/* Center: Links */}
-            <div className="flex items-center justify-center gap-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
               <Link
                 href="/privacy"
-                className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors whitespace-nowrap"
               >
                 Privacy Policy
               </Link>
-              <span className="text-gray-500/60 dark:text-gray-400/60">•</span>
+              <span className="text-gray-500/60 dark:text-gray-400/60">&middot;</span>
               <Link
                 href="/terms"
-                className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors whitespace-nowrap"
               >
                 Terms & Conditions
               </Link>
             </div>
 
             {/* Right: Copyright */}
-            <div className="flex items-center justify-end text-[11px] sm:text-xs text-gray-600 dark:text-gray-400">
-              © {year} tripfeels. All rights reserved.
+            <div className="flex items-center justify-center sm:justify-end text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              &copy; {year} tripfeels. All rights reserved.
             </div>
           </div>
         </div>

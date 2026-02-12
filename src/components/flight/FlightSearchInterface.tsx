@@ -283,8 +283,8 @@ export function FlightSearchInterface() {
                     <div className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">
                       Fare Type:
                     </div>
-                    <div className="flex items-start gap-1 sm:gap-2 lg:gap-3 flex-wrap">
-                      <label className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
+                    <div className="flex items-center gap-2 lg:gap-3 flex-wrap w-full">
+                      <label className="inline-flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
                         <input
                           type="radio"
                           name="fareType"
@@ -294,7 +294,7 @@ export function FlightSearchInterface() {
                         />
                         <span className="text-xs sm:text-sm">Regular</span>
                       </label>
-                      <label className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
+                      <label className="inline-flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
                         <input
                           type="radio"
                           name="fareType"
@@ -304,7 +304,7 @@ export function FlightSearchInterface() {
                         />
                         <span className="text-xs sm:text-sm">Student</span>
                       </label>
-                      <label className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
+                      <label className="inline-flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap min-w-0">
                         <input
                           type="radio"
                           name="fareType"

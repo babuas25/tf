@@ -10,7 +10,7 @@ import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 
 import AuthSlideshow from '@/components/auth/AuthSlideshow'
-import FirebaseStatus from '@/components/debug/FirebaseStatus'
+import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 // Removed unused Card imports
 import { DynamicButton } from '@/components/ui/dynamic-theme-components'
@@ -431,11 +431,11 @@ export default function AuthPage() {
 
           {/* Right Section - Auth Form */}
           <div
-            className={`${session?.user ? 'w-full' : 'w-full lg:w-1/2'} flex justify-center p-8 min-h-[calc(100vh-3.5rem)]`}
+            className={`${session?.user ? 'w-full' : 'w-full lg:w-1/2'} flex justify-center px-4 py-6 sm:p-8 min-h-[calc(100vh-3.5rem)]`}
           >
-            <div className="w-full max-w-md space-y-6 flex flex-col justify-center">
+            <div className="w-full max-w-none sm:max-w-md space-y-6 flex flex-col justify-center">
               {/* Auth Form Container with Glassmorphism */}
-              <div className="bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg p-8">
+              <div className="bg-white/20 dark:bg-white/10 backdrop-blur-md rounded-xl border border-white/30 dark:border-white/20 shadow-lg p-6 sm:p-8">
                 {/* Header */}
                 <div className="text-center">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -528,15 +528,12 @@ export default function AuthPage() {
                       </form>
                     </Form>
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-white/30 dark:border-white/20" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white/20 dark:bg-white/10 backdrop-blur-sm px-3 text-gray-600 dark:text-gray-400 rounded-lg">
-                          Or continue with
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-3 py-1">
+                      <span className="h-px flex-1 bg-white/20 dark:bg-white/15" />
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        Or continue with
+                      </span>
+                      <span className="h-px flex-1 bg-white/20 dark:bg-white/15" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -544,9 +541,9 @@ export default function AuthPage() {
                         variant="outline"
                         onClick={() => void handleSocialSignIn('google')}
                         disabled={isLoading}
-                        className="h-10"
+                        className="h-10 gap-2"
                       >
-                        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
                           <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                             fill="#4285F4"
@@ -570,11 +567,11 @@ export default function AuthPage() {
                         variant="outline"
                         onClick={() => void handleSocialSignIn('facebook')}
                         disabled={isLoading}
-                        className="h-10"
+                        className="h-10 gap-2"
                       >
-                        <svg className="mr-2 h-4 w-4" fill="#1877F2" viewBox="0 0 24 24">
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1877F2] text-[12px] font-bold leading-none text-white">
+                          f
+                        </span>
                         Facebook
                       </DynamicButton>
                     </div>
@@ -769,15 +766,12 @@ export default function AuthPage() {
                       </form>
                     </Form>
 
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-white/30 dark:border-white/20" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white/20 dark:bg-white/10 backdrop-blur-sm px-3 text-gray-600 dark:text-gray-400 rounded-lg">
-                          Or continue with
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-3 py-1">
+                      <span className="h-px flex-1 bg-white/20 dark:bg-white/15" />
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        Or continue with
+                      </span>
+                      <span className="h-px flex-1 bg-white/20 dark:bg-white/15" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -785,9 +779,9 @@ export default function AuthPage() {
                         variant="outline"
                         onClick={() => void handleSocialSignIn('google')}
                         disabled={isLoading}
-                        className="h-10"
+                        className="h-10 gap-2"
                       >
-                        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                        <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
                           <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                             fill="#4285F4"
@@ -811,11 +805,11 @@ export default function AuthPage() {
                         variant="outline"
                         onClick={() => void handleSocialSignIn('facebook')}
                         disabled={isLoading}
-                        className="h-10"
+                        className="h-10 gap-2"
                       >
-                        <svg className="mr-2 h-4 w-4" fill="#1877F2" viewBox="0 0 24 24">
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1877F2] text-[12px] font-bold leading-none text-white">
+                          f
+                        </span>
                         Facebook
                       </DynamicButton>
                     </div>
@@ -839,9 +833,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
-
-      {/* Firebase Debug Status (only in development) */}
-      <FirebaseStatus />
+      <Footer />
     </div>
   )
 }
