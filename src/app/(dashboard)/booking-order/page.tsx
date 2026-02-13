@@ -2,13 +2,32 @@
 
 import confetti from 'canvas-confetti'
 import { format } from 'date-fns'
-import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
-import { Plane, Loader2, Printer, RefreshCw, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
+import {
+  Briefcase,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Phone,
+  Plane,
+  Printer,
+  ReceiptText,
+  RefreshCw,
+  RotateCcw,
+  Shield,
+  Ticket,
+  Users,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { AirlineLogo } from '@/components/flight/shared/AirlineLogo'
+import { useTheme } from '@/context/theme-context'
 import { getAirportCity } from '@/lib/flight/utils/airport-city-lookup'
 import type { OrderCreateApiResponse, OrderCreateResponse } from '@/types/flight/api/order.types'
 
@@ -93,10 +112,28 @@ function isProcessingStatus(status?: string): boolean {
   return normalized === 'pending' || normalized === 'inprogress'
 }
 
+function getStatusBadgeConfig(status?: string): { label: string; color: string } {
+  const normalized = normalizeOrderStatus(status)
+  const statusConfig: Record<string, { label: string; color: string }> = {
+    onhold: { label: 'On Hold', color: '#F59E0B' },
+    'on-hold': { label: 'On Hold', color: '#F59E0B' },
+    pending: { label: 'Pending', color: '#FACC15' },
+    inprogress: { label: 'In Progress', color: '#3B82F6' },
+    'in-progress': { label: 'In Progress', color: '#3B82F6' },
+    confirmed: { label: 'Confirmed', color: '#16A34A' },
+    expired: { label: 'Expired', color: '#6B7280' },
+    unconfirmed: { label: 'Un-Confirmed', color: '#F97316' },
+    'un-confirmed': { label: 'Un-Confirmed', color: '#F97316' },
+    cancelled: { label: 'Cancelled', color: '#DC2626' },
+    canceled: { label: 'Cancelled', color: '#DC2626' },
+  }
+  return statusConfig[normalized] ?? { label: status ?? 'Pending', color: '#FACC15' }
+}
+
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-neutral-950 p-3 sm:p-4 shadow-sm ${className}`}
+      className={`ticket-card relative overflow-hidden rounded-xl border border-gray-200/80 bg-white/95 p-2.5 ring-1 ring-primary/10 shadow-[0_6px_20px_rgba(15,23,42,0.05)] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-primary/60 before:via-primary/25 before:to-transparent before:content-[''] dark:border-white/15 dark:bg-neutral-950/80 dark:ring-primary/20 dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-3 ${className}`}
     >
       {children}
     </div>
@@ -106,10 +143,31 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 function Label({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`${GeistSans.className} text-[10px] font-medium uppercase tracking-wide leading-tight text-gray-500 dark:text-gray-400 ${className}`.trim()}
+      className={`${GeistSans.className} text-[12px] font-medium uppercase tracking-[0.07em] leading-tight text-gray-500 dark:text-gray-300 ${className}`.trim()}
     >
       {children}
     </div>
+  )
+}
+
+function SectionHeading({
+  title,
+  icon: Icon,
+  className = '',
+}: {
+  title: string
+  icon: LucideIcon
+  className?: string
+}) {
+  return (
+    <h2
+      className={`${GeistSans.className} mb-1.5 flex items-center gap-1.5 text-sm font-semibold leading-tight tracking-[-0.01em] text-gray-900 dark:text-white sm:text-base ${className}`.trim()}
+    >
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
+        <Icon className="h-2.5 w-2.5" />
+      </span>
+      <span>{title}</span>
+    </h2>
   )
 }
 
@@ -130,6 +188,7 @@ export default function BookingOrderPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { logoType, textLogo, logoImage } = useTheme()
   const orderRef = searchParams.get('orderRef')
   const fromCreate = searchParams.get('success') === '1'
   const [order, setOrder] = useState<OrderCreateResponse | null>(null)
@@ -157,6 +216,7 @@ export default function BookingOrderPage() {
   const successPopupShownRef = useRef(false)
   const bookingSyncRef = useRef<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
+  const [penaltyExpanded, setPenaltyExpanded] = useState(false)
 
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -345,11 +405,34 @@ export default function BookingOrderPage() {
 
   const handlePrint = useCallback(() => {
     if (typeof window === 'undefined' || !printRef.current) return
+
     const prevTitle = document.title
-    document.title = `Ticket - ${order?.orderReference ?? 'Booking'}`
-    window.print()
-    document.title = prevTitle
-  }, [order?.orderReference])
+    const wasPenaltyExpanded = penaltyExpanded
+
+    if (!wasPenaltyExpanded) {
+      setPenaltyExpanded(true)
+    }
+
+    let restored = false
+    const restoreAfterPrint = () => {
+      if (restored) return
+      restored = true
+      document.title = prevTitle
+      if (!wasPenaltyExpanded) {
+        setPenaltyExpanded(false)
+      }
+      window.removeEventListener('afterprint', restoreAfterPrint)
+    }
+
+    window.addEventListener('afterprint', restoreAfterPrint)
+
+    window.setTimeout(() => {
+      document.title = `Ticket - ${order?.orderReference ?? 'Booking'}`
+      window.print()
+      // Fallback for browsers that do not reliably emit afterprint
+      window.setTimeout(restoreAfterPrint, 300)
+    }, wasPenaltyExpanded ? 0 : 120)
+  }, [order?.orderReference, penaltyExpanded])
 
   const handleOrderConfirm = useCallback(async () => {
     if (!orderRef || !order) return
@@ -576,6 +659,7 @@ export default function BookingOrderPage() {
   const returnSegments = paxSegments.filter((s) => s.paxSegment.returnJourney)
   const firstSegment = paxSegments[0]?.paxSegment
   const commonAirline = firstSegment?.marketingCarrierInfo?.carrierName ?? '-'
+  const commonAirlineCode = firstSegment?.marketingCarrierInfo?.carrierDesigCode ?? ''
   const commonPNR = firstSegment?.airlinePNR ?? '-'
   const commonClass = firstSegment?.cabinType ?? 'Economy'
   const fareDetails = firstItem?.fareDetailList ?? []
@@ -664,10 +748,11 @@ export default function BookingOrderPage() {
   const isOrderInProgress = rawOrderStatusLower === 'inprogress'
   const showRefundChangeFlight = isOrderConfirmed || isOrderInProgress
   const refundChangeFlightDisabled = isOrderInProgress || actionLoading !== null
+  const statusBadge = getStatusBadgeConfig(displayStatus)
 
   return (
     <div
-      className={`min-h-screen bg-white dark:bg-black pt-2 pb-6 px-2 sm:px-4 print:bg-white print:py-0 print:px-0 ${GeistMono.className}`}
+      className={`min-h-screen bg-gray-50 px-2 pb-4 pt-2 text-gray-900 dark:bg-black dark:text-white sm:px-3 lg:px-4 print:bg-white print:px-0 print:py-0 print:text-black ${GeistSans.className}`}
     >
       {/* Order confirmation – loading popup with steps */}
       {showConfirmPopup && (
@@ -806,7 +891,7 @@ export default function BookingOrderPage() {
               <p className={`${GeistSans.className} mt-2 text-sm text-gray-600 dark:text-gray-400`}>
                 Your flight has been booked. Order Reference:{' '}
                 <span
-                  className={`${GeistMono.className} font-semibold text-gray-900 dark:text-white`}
+                  className="font-semibold tracking-[0.02em] text-gray-900 dark:text-white"
                 >
                   {order?.orderReference ?? orderRef}
                 </span>
@@ -941,79 +1026,95 @@ export default function BookingOrderPage() {
         </div>
       )}
 
-      <div ref={printRef} className="mx-auto w-full max-w-4xl print:max-w-none">
-        {/* Two-column layout: main content (left) + Actions card in right column like Service Fee */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-          <div className="flex-1 min-w-0 space-y-2 sm:space-y-4">
-            {/* 1. Electronic Ticket */}
-            <Card>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                <div className="min-w-0 flex-1">
-                  <h1
-                    className={`${GeistSans.className} text-lg sm:text-xl font-bold leading-tight text-gray-900 dark:text-white`}
-                  >
-                    Electronic Ticket
-                  </h1>
-                  <p
-                    className={`${GeistSans.className} mt-0.5 text-sm leading-tight text-gray-600 dark:text-gray-400`}
-                  >
-                    Order Reference:{' '}
+      <div ref={printRef} className="ticket-document mx-auto w-full max-w-[1240px] print:mx-0 print:max-w-none">
+        {/* Two-column layout: main content (left) + Actions card in right column */}
+        <div className="ticket-main-grid grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-4">
+          <div className="min-w-0 space-y-2.5">
+            {/* Ticket Header - Standard Ticket Style */}
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-white to-primary/5 dark:from-neutral-950 dark:to-primary/10">
+              <div className="flex flex-col gap-2.5">
+                {/* Top Row: Logo & Status */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    {logoType === 'image' && logoImage ? (
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={logoImage}
+                          alt="tripfeels Logo"
+                          width={120}
+                          height={32}
+                          className="h-7 w-auto object-contain"
+                          priority
+                        />
+                        <p className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-400">
+                          {commonAirline}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <h1
+                          className={`${GeistSans.className} text-lg font-bold leading-tight tracking-tight text-primary sm:text-xl`}
+                        >
+                          {textLogo}
+                        </h1>
+                        <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-400">
+                          {commonAirline}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
                     <span
-                      className={`${GeistMono.className} font-semibold text-gray-900 dark:text-white`}
+                      className="rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm"
+                      style={{ backgroundColor: statusBadge.color }}
                     >
-                      {order.orderReference}
+                      {statusBadge.label}
                     </span>
-                  </p>
-                  <div
-                    className={`${GeistSans.className} mt-3 grid grid-cols-1 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-2`}
-                  >
-                    {createdOn && (
-                      <div>
-                        <Label className="mb-0">Created on</Label>
-                        <p className="mt-0.5 font-medium leading-tight text-gray-900 dark:text-white">
-                          {createdOn}
-                        </p>
-                      </div>
-                    )}
-                    {createdByName && (
-                      <div>
-                        <Label className="mb-0">Created by</Label>
-                        <p className="mt-0.5 font-medium leading-tight text-gray-900 dark:text-white">
-                          {createdByName}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <Label className="mb-0">Airline PNR</Label>
-                      <p
-                        className={`mt-0.5 font-medium leading-tight text-gray-900 dark:text-white ${GeistMono.className}`}
-                      >
-                        {airlinePNRDisplay}
+                    {order.orderStatus === 'OnHold' && order.paymentTimeLimit && (
+                      <p className="text-[10px] leading-tight text-gray-600 dark:text-gray-400 text-right max-w-[200px]">
+                        {isPaymentTimeLimitPast(order.paymentTimeLimit)
+                          ? 'Booking expired'
+                          : formatPaymentTimeLimitMessage(order.paymentTimeLimit)}
                       </p>
-                    </div>
-                    <div>
-                      <Label className="mb-0">Payment</Label>
-                      <p className="mt-0.5 font-medium leading-tight text-gray-900 dark:text-white">
-                        {paymentStatus}
-                      </p>
-                    </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-1.5 shrink-0 sm:text-right">
-                  <div className="flex items-center gap-2 sm:justify-end">
-                    <Label>STATUS</Label>
-                    <div className="rounded border border-gray-800 px-2.5 py-1 font-semibold text-sm text-gray-900 dark:border-gray-300 dark:text-white">
-                      {displayStatus}
-                    </div>
-                  </div>
-                  {order.orderStatus === 'OnHold' && order.paymentTimeLimit && (
-                    <p
-                      className={`${GeistSans.className} text-xs leading-tight text-gray-600 dark:text-gray-400`}
-                    >
-                      {isPaymentTimeLimitPast(order.paymentTimeLimit)
-                        ? 'Your booking has expired.'
-                        : formatPaymentTimeLimitMessage(order.paymentTimeLimit)}
+
+                {/* Ticket Info Grid */}
+                <div className="grid grid-cols-2 gap-2.5 border-t border-gray-200/80 pt-2.5 dark:border-white/10 sm:grid-cols-3 lg:grid-cols-5">
+                  <div>
+                    <Label className="mb-0.5">Order Reference</Label>
+                    <p className="text-sm font-bold leading-tight tracking-wide text-primary sm:text-base">
+                      {order.orderReference}
                     </p>
+                  </div>
+                  <div>
+                    <Label className="mb-0.5">Airline PNR</Label>
+                    <p className="text-sm font-bold leading-tight tracking-wide text-gray-900 dark:text-white sm:text-base">
+                      {airlinePNRDisplay}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="mb-0.5">Payment Status</Label>
+                    <p className="text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                      {paymentStatus}
+                    </p>
+                  </div>
+                  {createdOn && (
+                    <div>
+                      <Label className="mb-0.5">Created On</Label>
+                      <p className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                        {createdOn}
+                      </p>
+                    </div>
+                  )}
+                  {createdByName && (
+                    <div>
+                      <Label className="mb-0.5">Created By</Label>
+                      <p className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                        {createdByName}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1022,7 +1123,7 @@ export default function BookingOrderPage() {
             {isInstantIssuing && (
               <Card className="border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
                 <p
-                  className={`${GeistSans.className} text-sm font-medium text-amber-900 dark:text-amber-100`}
+                  className={`${GeistSans.className} text-xs font-medium leading-tight text-amber-900 dark:text-amber-100`}
                 >
                   Instant ticket issuance is in progress. This page auto-refreshes every 15 seconds
                   until the supplier returns a final status.
@@ -1032,10 +1133,10 @@ export default function BookingOrderPage() {
 
             {isInstantIssueFailed && (
               <Card className="border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10">
-                <p className={`${GeistSans.className} text-sm font-medium text-red-900 dark:text-red-100`}>
+                <p className={`${GeistSans.className} text-xs font-medium leading-tight text-red-900 dark:text-red-100`}>
                   Instant ticket issuance was not completed. Please refresh and check status, or
                   contact support with order reference{' '}
-                  <span className={GeistMono.className}>{order.orderReference}</span>.
+                  <span className="font-semibold tracking-[0.02em]">{order.orderReference}</span>.
                 </p>
               </Card>
             )}
@@ -1043,21 +1144,17 @@ export default function BookingOrderPage() {
             {isInstantIssued && (
               <Card className="border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-500/10">
                 <p
-                  className={`${GeistSans.className} text-sm font-medium text-green-900 dark:text-green-100`}
+                  className={`${GeistSans.className} text-xs font-medium leading-tight text-green-900 dark:text-green-100`}
                 >
                   Instant purchase completed. Your ticket is issued and confirmed.
                 </p>
               </Card>
             )}
 
-            {/* 2. Passenger Information */}
+            {/* Passenger Information - Standard Ticket Style */}
             <Card>
-              <h2
-                className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-              >
-                Passenger Information
-              </h2>
-              <div className="space-y-2 sm:space-y-4">
+              <SectionHeading title="Passenger Information" icon={Users} />
+              <div className="space-y-2.5">
                 {order.paxList.map((pax, idx) => {
                   const ind = pax.individual
                   const fullName = [ind.givenName, ind.surname].filter(Boolean).join(' ')
@@ -1085,63 +1182,67 @@ export default function BookingOrderPage() {
                     String(expiryDate).trim() !== '' &&
                     String(expiryDate).trim() !== '-'
 
-                  const secondRowItems: { label: string; value: string }[] = []
-                  if (hasNationality)
-                    secondRowItems.push({ label: 'NATIONALITY', value: ind.nationality })
-                  if (hasDocNumber) secondRowItems.push({ label: 'PASSPORT NO.', value: docNumber })
-                  if (hasExpiryDate)
-                    secondRowItems.push({ label: 'EXPIRY DATE', value: formatExpiry(expiryDate) })
-
                   return (
                     <div
                       key={idx}
-                      className="space-y-2 sm:space-y-3 border-t border-gray-100 pt-2 sm:pt-3 first:border-0 first:pt-0 dark:border-gray-700"
+                      className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2.5 dark:border-white/10 dark:bg-white/5"
                     >
-                      {/* Row 1: Name, Type, GENDER, DATE OF BIRTH */}
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 md:grid-cols-4 md:gap-x-6 md:gap-y-3">
+                      <div className="mb-2 flex items-center justify-between border-b border-gray-200/80 pb-1.5 dark:border-white/10">
+                        <p className="text-base font-bold leading-tight text-gray-900 dark:text-white">
+                          {fullName || '-'}
+                        </p>
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-primary">
+                          {pax.ptc ?? '-'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                         <div>
-                          <Label>NAME</Label>
-                          <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                            {fullName || '-'}
-                          </p>
-                          {hasTicketNum && (
-                            <p
-                              className={`mt-1 text-xs font-medium leading-tight text-gray-600 dark:text-gray-400 ${GeistMono.className}`}
-                            >
-                              Ticket: {ticketNum}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <Label>TYPE</Label>
-                          <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                            {pax.ptc ?? '-'}
-                          </p>
-                        </div>
-                        <div>
-                          <Label>GENDER</Label>
-                          <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                          <Label className="text-[10px]">GENDER</Label>
+                          <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                             {ind.gender ?? '-'}
                           </p>
                         </div>
                         <div>
-                          <Label>DATE OF BIRTH</Label>
-                          <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                          <Label className="text-[10px]">DATE OF BIRTH</Label>
+                          <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                             {formatBirthdate(ind.birthdate)}
                           </p>
                         </div>
+                        {hasNationality && (
+                          <div>
+                            <Label className="text-[10px]">NATIONALITY</Label>
+                            <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                              {ind.nationality}
+                            </p>
+                          </div>
+                        )}
+                        {hasDocNumber && (
+                          <div>
+                            <Label className="text-[10px]">PASSPORT NO.</Label>
+                            <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                              {docNumber}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      {/* Row 2: Other items (only if data present) */}
-                      {secondRowItems.length > 0 && (
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 md:grid-cols-6 md:gap-x-6 md:gap-y-3">
-                          {secondRowItems.map((item) => (
-                            <div key={item.label}>
-                              <Label>{item.label}</Label>
-                              <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                                {item.value}
+                      {(hasExpiryDate || hasTicketNum) && (
+                        <div className="mt-2 grid grid-cols-1 gap-2 border-t border-gray-200/80 pt-2 sm:grid-cols-2 dark:border-white/10">
+                          {hasExpiryDate && (
+                            <div>
+                              <Label className="text-[10px]">EXPIRY DATE</Label>
+                              <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                                {formatExpiry(expiryDate)}
                               </p>
                             </div>
-                          ))}
+                          )}
+                          {hasTicketNum && (
+                            <div>
+                              <Label className="text-[10px]">TICKET NUMBER</Label>
+                              <p className="mt-0.5 text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                                {ticketNum}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1150,42 +1251,39 @@ export default function BookingOrderPage() {
               </div>
             </Card>
 
-            {/* 3. Itinerary (Outbound + Return in separate light-gray blocks) */}
+            {/* Flight Itinerary - Standard Ticket Style */}
             {(outboundSegments.length > 0 || returnSegments.length > 0) && (
               <Card>
-                <h2
-                  className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-                >
-                  Itinerary
-                </h2>
-                <div className="mb-2 sm:mb-3 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3 md:gap-x-4">
-                  <div>
-                    <Label>AIRLINE</Label>
-                    <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                      {commonAirline}
-                    </p>
-                  </div>
-                  <div>
-                    <Label>AIRLINE PNR</Label>
-                    <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                      {commonPNR}
-                    </p>
-                  </div>
-                  <div>
-                    <Label>CLASS</Label>
-                    <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                      {commonClass}
-                    </p>
+                <div className="mb-2.5 flex items-center justify-between border-b border-gray-200/80 pb-2 dark:border-white/10">
+                  <SectionHeading title="Flight Details" icon={Plane} className="mb-0" />
+                  <div className="flex items-center gap-3 text-xs">
+                    {commonAirlineCode && (
+                      <div className="flex items-center gap-1.5">
+                        <AirlineLogo
+                          airlineId={commonAirlineCode}
+                          size={20}
+                          className="h-4 w-4 rounded-sm"
+                        />
+                        <span className="font-semibold leading-tight text-gray-900 dark:text-white">
+                          {commonAirline}
+                        </span>
+                      </div>
+                    )}
+                    <div className="text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Class:</span> {commonClass}
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2 sm:space-y-3">
+
+                <div className="space-y-2.5">
                   {outboundSegments.length > 0 && (
-                    <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-2 sm:p-3">
-                      <p
-                        className={`${GeistSans.className} mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400`}
-                      >
-                        Outbound
-                      </p>
+                    <div className="rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5 dark:from-primary/10">
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-primary" />
+                        <p className="text-xs font-bold uppercase leading-tight tracking-wider text-primary">
+                          Outbound Flight
+                        </p>
+                      </div>
                       {outboundSegments.map((item, i) => {
                         const seg = item.paxSegment
                         const dep = seg.departure
@@ -1200,74 +1298,80 @@ export default function BookingOrderPage() {
                         return (
                           <div
                             key={i}
-                            className="border-t border-gray-200/80 dark:border-white/10 pt-2 sm:pt-3 first:border-0 first:pt-0"
+                            className="border-t border-primary/20 pt-2.5 first:border-0 first:pt-0"
                           >
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-3">
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                               <div>
-                                <Label>DEPARTURE</Label>
-                                <p className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-white">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  DEPARTURE
+                                </p>
+                                <p className="mt-0.5 text-2xl font-bold leading-tight text-primary">
                                   {formatFlightTime(dep.aircraftScheduledDateTime)}
                                 </p>
                                 <p className="text-sm font-bold leading-tight text-gray-900 dark:text-white">
                                   {depCity}
                                 </p>
-                                <p className="text-xs leading-tight text-gray-500 dark:text-gray-400">
+                                <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
                                   {formatFlightDate(dep.aircraftScheduledDateTime)}
                                 </p>
                               </div>
-                              <div className="flex flex-col items-center px-1">
-                                <Label>DURATION</Label>
-                                <p className="mt-0.5 text-sm font-bold leading-tight text-gray-900 dark:text-white">
+                              <div className="flex flex-col items-center">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
                                   {durationStr}
                                 </p>
-                                <div className="relative mt-0.5 flex w-14 items-center">
-                                  <div className="h-px flex-1 border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
-                                  <Plane className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 text-gray-400" />
+                                <div className="relative my-1 flex w-16 items-center">
+                                  <div className="h-0.5 flex-1 border-t-2 border-dashed border-primary/40" />
+                                  <Plane className="absolute left-1/2 h-3 w-3 -translate-x-1/2 text-primary" />
                                 </div>
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  {seg.marketingCarrierInfo.carrierDesigCode}
+                                  {seg.flightNumber}
+                                </p>
                               </div>
                               <div className="text-right">
-                                <Label>ARRIVAL</Label>
-                                <p className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-white">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  ARRIVAL
+                                </p>
+                                <p className="mt-0.5 text-2xl font-bold leading-tight text-primary">
                                   {formatFlightTime(arr.aircraftScheduledDateTime)}
                                 </p>
                                 <p className="text-sm font-bold leading-tight text-gray-900 dark:text-white">
                                   {arrCity}
                                 </p>
-                                <p className="text-xs leading-tight text-gray-500 dark:text-gray-400">
+                                <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
                                   {formatFlightDate(arr.aircraftScheduledDateTime)}
                                 </p>
                               </div>
                             </div>
-                            <div className="mt-2 sm:mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-5 md:gap-x-4">
+                            <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-primary/10 pt-2 text-xs sm:grid-cols-5">
                               <div>
-                                <Label>FLIGHT</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                                  {seg.marketingCarrierInfo.carrierDesigCode}
-                                  {seg.flightNumber}
-                                </p>
-                              </div>
-                              <div>
-                                <Label>AIRCRAFT</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">AIRCRAFT</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {seg.iatA_AircraftType.iatA_AircraftTypeCode}
                                 </p>
                               </div>
                               <div>
-                                <Label>DEP TERMINAL</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">DEP TERMINAL</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {dep.terminalName ?? '-'}
                                 </p>
                               </div>
                               <div>
-                                <Label>ARR TERMINAL</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">ARR TERMINAL</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {arr.terminalName ?? '-'}
                                 </p>
                               </div>
                               <div>
-                                <Label>RBD</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">RBD</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {seg.rbd}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">PNR</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                  {commonPNR}
                                 </p>
                               </div>
                             </div>
@@ -1277,12 +1381,13 @@ export default function BookingOrderPage() {
                     </div>
                   )}
                   {returnSegments.length > 0 && (
-                    <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-2 sm:p-3">
-                      <p
-                        className={`${GeistSans.className} mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400`}
-                      >
-                        Return
-                      </p>
+                    <div className="rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5 dark:from-primary/10">
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-primary" />
+                        <p className="text-xs font-bold uppercase leading-tight tracking-wider text-primary">
+                          Return Flight
+                        </p>
+                      </div>
                       {returnSegments.map((item, i) => {
                         const seg = item.paxSegment
                         const dep = seg.departure
@@ -1297,74 +1402,80 @@ export default function BookingOrderPage() {
                         return (
                           <div
                             key={i}
-                            className="border-t border-gray-200/80 dark:border-white/10 pt-2 sm:pt-3 first:border-0 first:pt-0"
+                            className="border-t border-primary/20 pt-2.5 first:border-0 first:pt-0"
                           >
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-3">
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                               <div>
-                                <Label>DEPARTURE</Label>
-                                <p className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-white">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  DEPARTURE
+                                </p>
+                                <p className="mt-0.5 text-2xl font-bold leading-tight text-primary">
                                   {formatFlightTime(dep.aircraftScheduledDateTime)}
                                 </p>
                                 <p className="text-sm font-bold leading-tight text-gray-900 dark:text-white">
                                   {depCity}
                                 </p>
-                                <p className="text-xs leading-tight text-gray-500 dark:text-gray-400">
+                                <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
                                   {formatFlightDate(dep.aircraftScheduledDateTime)}
                                 </p>
                               </div>
-                              <div className="flex flex-col items-center px-1">
-                                <Label>DURATION</Label>
-                                <p className="mt-0.5 text-sm font-bold leading-tight text-gray-900 dark:text-white">
+                              <div className="flex flex-col items-center">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
                                   {durationStr}
                                 </p>
-                                <div className="relative mt-0.5 flex w-14 items-center">
-                                  <div className="h-px flex-1 border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
-                                  <Plane className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 text-gray-400" />
+                                <div className="relative my-1 flex w-16 items-center">
+                                  <div className="h-0.5 flex-1 border-t-2 border-dashed border-primary/40" />
+                                  <Plane className="absolute left-1/2 h-3 w-3 -translate-x-1/2 text-primary" />
                                 </div>
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  {seg.marketingCarrierInfo.carrierDesigCode}
+                                  {seg.flightNumber}
+                                </p>
                               </div>
                               <div className="text-right">
-                                <Label>ARRIVAL</Label>
-                                <p className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-white">
+                                <p className="text-[10px] font-medium leading-tight text-gray-500 dark:text-gray-400">
+                                  ARRIVAL
+                                </p>
+                                <p className="mt-0.5 text-2xl font-bold leading-tight text-primary">
                                   {formatFlightTime(arr.aircraftScheduledDateTime)}
                                 </p>
                                 <p className="text-sm font-bold leading-tight text-gray-900 dark:text-white">
                                   {arrCity}
                                 </p>
-                                <p className="text-xs leading-tight text-gray-500 dark:text-gray-400">
+                                <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
                                   {formatFlightDate(arr.aircraftScheduledDateTime)}
                                 </p>
                               </div>
                             </div>
-                            <div className="mt-2 sm:mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-5 md:gap-x-4">
+                            <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-primary/10 pt-2 text-xs sm:grid-cols-5">
                               <div>
-                                <Label>FLIGHT</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
-                                  {seg.marketingCarrierInfo.carrierDesigCode}
-                                  {seg.flightNumber}
-                                </p>
-                              </div>
-                              <div>
-                                <Label>AIRCRAFT</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">AIRCRAFT</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {seg.iatA_AircraftType.iatA_AircraftTypeCode}
                                 </p>
                               </div>
                               <div>
-                                <Label>DEP TERMINAL</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">DEP TERMINAL</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {dep.terminalName ?? '-'}
                                 </p>
                               </div>
                               <div>
-                                <Label>ARR TERMINAL</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">ARR TERMINAL</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {arr.terminalName ?? '-'}
                                 </p>
                               </div>
                               <div>
-                                <Label>RBD</Label>
-                                <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                                <Label className="text-[10px]">RBD</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                                   {seg.rbd}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">PNR</Label>
+                                <p className="mt-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                  {commonPNR}
                                 </p>
                               </div>
                             </div>
@@ -1377,15 +1488,11 @@ export default function BookingOrderPage() {
               </Card>
             )}
 
-            {/* 4. Baggage Allowance */}
+            {/* Baggage Allowance - Standard Ticket Style */}
             {baggageList.length > 0 && (
               <Card>
-                <h2
-                  className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-                >
-                  Baggage Allowance
-                </h2>
-                <div className="space-y-1.5 sm:space-y-2">
+                <SectionHeading title="Baggage Allowance" icon={Briefcase} />
+                <div className="grid gap-2 sm:grid-cols-2">
                   {baggageList.map((b, i) => {
                     const bag = b.baggageAllowance
                     const checkIn = bag.checkIn?.[0]?.allowance ?? '-'
@@ -1393,23 +1500,19 @@ export default function BookingOrderPage() {
                     return (
                       <div
                         key={i}
-                        className="border-t border-gray-100 pt-1.5 sm:pt-2 first:border-0 first:pt-0 dark:border-gray-700"
+                        className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2 dark:border-white/10 dark:bg-white/5"
                       >
-                        <p className="mb-0.5 sm:mb-1 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                        <p className="mb-1.5 text-xs font-bold leading-tight text-gray-900 dark:text-white">
                           {getAirportCity(bag.departure)} → {getAirportCity(bag.arrival)}
                         </p>
-                        <div className="flex gap-4 sm:gap-6">
+                        <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <Label>CHECK-IN (ADULT)</Label>
-                            <p className="mt-0.5 text-sm font-bold leading-tight text-gray-900 dark:text-white">
-                              {checkIn}
-                            </p>
+                            <Label className="text-[10px]">CHECK-IN</Label>
+                            <p className="mt-0.5 text-sm font-bold leading-tight text-primary">{checkIn}</p>
                           </div>
                           <div>
-                            <Label>CABIN (ADULT)</Label>
-                            <p className="mt-0.5 text-sm font-bold leading-tight text-gray-900 dark:text-white">
-                              {cabin}
-                            </p>
+                            <Label className="text-[10px]">CABIN</Label>
+                            <p className="mt-0.5 text-sm font-bold leading-tight text-primary">{cabin}</p>
                           </div>
                         </div>
                       </div>
@@ -1419,226 +1522,251 @@ export default function BookingOrderPage() {
               </Card>
             )}
 
-            {/* 5. Refund & Exchange Penalties */}
+            {/* Penalty Information - Compact Collapsible Design */}
             {penalty &&
               (penalty.refundPenaltyList?.length ?? 0) +
                 (penalty.exchangePenaltyList?.length ?? 0) >
                 0 && (
                 <Card>
-                  <h2
-                    className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
+                  <button
+                    type="button"
+                    onClick={() => setPenaltyExpanded(!penaltyExpanded)}
+                    className="flex w-full items-center justify-between"
                   >
-                    Penalty Information
-                  </h2>
-                  <div className="grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2 md:gap-6">
-                    {/* Refund column */}
-                    <div className="space-y-2 sm:space-y-3">
-                      {penalty.refundPenaltyList?.map((item, i) => {
-                        const r = item.refundPenalty
-                        return (
-                          <div
-                            key={`refund-${i}`}
-                            className="border-t border-gray-100 pt-1.5 sm:pt-2 first:border-0 first:pt-0 dark:border-gray-700"
-                          >
-                            <p
-                              className={`${GeistSans.className} mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400`}
-                            >
-                              Refund — {getAirportCity(r.departure)} → {getAirportCity(r.arrival)}
+                    <SectionHeading title="Penalty Information" icon={Shield} className="mb-0" />
+                    {penaltyExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    )}
+                  </button>
+                  {penaltyExpanded && (
+                    <div className="mt-2.5 space-y-2 border-t border-gray-200/80 pt-2.5 dark:border-white/10">
+                      {/* Compact Table-like Layout */}
+                      <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                        {/* Refund Section */}
+                        {penalty.refundPenaltyList && penalty.refundPenaltyList.length > 0 && (
+                          <div className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2 dark:border-white/10 dark:bg-white/5">
+                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                              Refund Policy
                             </p>
-                            <ul className="space-y-1.5">
-                              {r.penaltyInfoList?.map((p, j) => (
-                                <li key={j}>
-                                  <p className="mt-0.5 text-xs font-semibold leading-tight text-gray-900 dark:text-white">
-                                    {p.penaltyInfo.type}
-                                  </p>
-                                  <ul className="mt-0.5 list-inside list-disc space-y-0.5 text-xs text-gray-700 dark:text-gray-300">
-                                    {p.penaltyInfo.textInfoList
-                                      ?.flatMap((t) => t.textInfo.info ?? [])
-                                      .map((line, k) => (
-                                        <li key={k} className="leading-tight">
-                                          {line}
-                                        </li>
-                                      ))}
-                                  </ul>
-                                </li>
-                              ))}
-                            </ul>
+                            <div className="space-y-1.5">
+                              {penalty.refundPenaltyList.map((item, i) => {
+                                const r = item.refundPenalty
+                                const route = `${getAirportCity(r.departure)} → ${getAirportCity(r.arrival)}`
+                                return (
+                                  <div key={`refund-${i}`} className="border-t border-gray-200/50 pt-1.5 first:border-0 first:pt-0 dark:border-white/5">
+                                    <p className="mb-1 text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+                                      {route}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {r.penaltyInfoList?.map((p, j) => {
+                                        const penaltyType = p.penaltyInfo.type
+                                        const penaltyTexts = p.penaltyInfo.textInfoList
+                                          ?.flatMap((t) => t.textInfo.info ?? [])
+                                          .filter(Boolean) ?? []
+                                        // Deduplicate identical penalty texts
+                                        const uniqueTexts = Array.from(new Set(penaltyTexts))
+                                        return (
+                                          <div key={j} className="pl-1.5">
+                                            <p className="text-[10px] font-medium leading-tight text-gray-600 dark:text-gray-400">
+                                              {penaltyType}:
+                                            </p>
+                                            {uniqueTexts.length > 0 ? (
+                                              <p className="text-[10px] leading-tight text-gray-600 dark:text-gray-300">
+                                                {uniqueTexts.join(', ')}
+                                              </p>
+                                            ) : (
+                                              <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                                                -
+                                              </p>
+                                            )}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                    {/* Exchange column */}
-                    <div className="space-y-2 sm:space-y-3">
-                      {penalty.exchangePenaltyList?.map((item, i) => {
-                        const e = item.exchangePenalty
-                        return (
-                          <div
-                            key={`exchange-${i}`}
-                            className="border-t border-gray-100 pt-1.5 sm:pt-2 first:border-0 first:pt-0 dark:border-gray-700"
-                          >
-                            <p
-                              className={`${GeistSans.className} mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400`}
-                            >
-                              Exchange — {getAirportCity(e.departure)} → {getAirportCity(e.arrival)}
+                        )}
+                        {/* Exchange Section */}
+                        {penalty.exchangePenaltyList && penalty.exchangePenaltyList.length > 0 && (
+                          <div className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2 dark:border-white/10 dark:bg-white/5">
+                            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                              Exchange Policy
                             </p>
-                            <ul className="space-y-1.5">
-                              {e.penaltyInfoList?.map((p, j) => (
-                                <li key={j}>
-                                  <p className="mt-0.5 text-xs font-semibold leading-tight text-gray-900 dark:text-white">
-                                    {p.penaltyInfo.type}
-                                  </p>
-                                  <ul className="mt-0.5 list-inside list-disc space-y-0.5 text-xs text-gray-700 dark:text-gray-300">
-                                    {p.penaltyInfo.textInfoList
-                                      ?.flatMap((t) => t.textInfo.info ?? [])
-                                      .map((line, k) => (
-                                        <li key={k} className="leading-tight">
-                                          {line}
-                                        </li>
-                                      ))}
-                                  </ul>
-                                </li>
-                              ))}
-                            </ul>
+                            <div className="space-y-1.5">
+                              {penalty.exchangePenaltyList.map((item, i) => {
+                                const e = item.exchangePenalty
+                                const route = `${getAirportCity(e.departure)} → ${getAirportCity(e.arrival)}`
+                                return (
+                                  <div key={`exchange-${i}`} className="border-t border-gray-200/50 pt-1.5 first:border-0 first:pt-0 dark:border-white/5">
+                                    <p className="mb-1 text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+                                      {route}
+                                    </p>
+                                    <div className="space-y-1">
+                                      {e.penaltyInfoList?.map((p, j) => {
+                                        const penaltyType = p.penaltyInfo.type
+                                        const penaltyTexts = p.penaltyInfo.textInfoList
+                                          ?.flatMap((t) => t.textInfo.info ?? [])
+                                          .filter(Boolean) ?? []
+                                        // Deduplicate identical penalty texts
+                                        const uniqueTexts = Array.from(new Set(penaltyTexts))
+                                        return (
+                                          <div key={j} className="pl-1.5">
+                                            <p className="text-[10px] font-medium leading-tight text-gray-600 dark:text-gray-400">
+                                              {penaltyType}:
+                                            </p>
+                                            {uniqueTexts.length > 0 ? (
+                                              <p className="text-[10px] leading-tight text-gray-600 dark:text-gray-300">
+                                                {uniqueTexts.join(', ')}
+                                              </p>
+                                            ) : (
+                                              <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                                                -
+                                              </p>
+                                            )}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
                           </div>
-                        )
-                      })}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </Card>
               )}
 
-            {/* 6. Pricing Details + Order info */}
+            {/* Pricing Details - Standard Ticket Style */}
             <Card>
-              <h2
-                className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-              >
-                Pricing Details
-              </h2>
-              <div className="grid gap-2 sm:gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <Label className="mb-0.5 sm:mb-1 block">FARE BREAKDOWN (PER ADULT)</Label>
-                  <ul className="space-y-1 text-xs">
+                  <SectionHeading title="Fare Breakdown" icon={ReceiptText} className="mb-2" />
+                  <div className="space-y-1.5 rounded-lg border border-gray-200/80 bg-gray-50/50 p-2.5 dark:border-white/10 dark:bg-white/5">
                     {fareDetails.map((fd, i) => {
                       const f = fd.fareDetail
                       const mult = f.paxCount > 1 ? ` (x${f.paxCount})` : ''
                       return (
-                        <li key={i} className="flex justify-between">
+                        <div key={i} className="flex justify-between text-xs leading-tight">
                           <span className="text-gray-600 dark:text-gray-400">Base Fare{mult}</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
+                          <span className="font-semibold tabular-nums leading-tight text-gray-900 dark:text-white">
                             {f.currency} {f.baseFare.toLocaleString()}
                           </span>
-                        </li>
+                        </div>
                       )
                     })}
                     {fareDetails.map((fd, i) => (
-                      <li key={`tax-${i}`} className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
+                      <div key={`tax-${i}`} className="flex justify-between text-xs leading-tight">
+                        <span className="text-gray-600 dark:text-gray-400">Tax & Fees</span>
+                        <span className="font-semibold tabular-nums leading-tight text-gray-900 dark:text-white">
                           {fd.fareDetail.currency} {fd.fareDetail.tax.toLocaleString()}
                         </span>
-                      </li>
+                      </div>
                     ))}
                     {fareDetails.some((fd) => fd.fareDetail.discount > 0) && (
-                      <li className="flex justify-between text-green-600 dark:text-green-400">
+                      <div className="flex justify-between text-xs leading-tight text-green-600 dark:text-green-400">
                         <span>Discount</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold tabular-nums">
                           - {firstItem?.fareDetailList?.[0]?.fareDetail.currency}{' '}
                           {firstItem?.fareDetailList?.[0]?.fareDetail.discount.toLocaleString()}
                         </span>
-                      </li>
+                      </div>
                     )}
                     {price?.totalVAT?.total != null && price.totalVAT.total > 0 && (
-                      <li className="flex justify-between">
+                      <div className="flex justify-between text-xs leading-tight">
                         <span className="text-gray-600 dark:text-gray-400">VAT</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
+                        <span className="font-semibold tabular-nums leading-tight text-gray-900 dark:text-white">
                           {price.totalVAT.curreny} {price.totalVAT.total.toLocaleString()}
                         </span>
-                      </li>
+                      </div>
                     )}
                     {price?.totalPayable && (
-                      <li className="flex justify-between border-t border-gray-200 pt-1.5 font-bold text-gray-900 dark:border-gray-700 dark:text-white">
-                        <span>Total</span>
-                        <span>
+                      <div className="mt-2 flex justify-between border-t-2 border-primary/30 pt-2 text-sm font-bold leading-tight text-primary">
+                        <span>Total Amount</span>
+                        <span className="tabular-nums text-base">
                           {price.totalPayable.curreny} {price.totalPayable.total.toLocaleString()}
                         </span>
-                      </li>
+                      </div>
                     )}
-                  </ul>
+                  </div>
                 </div>
                 <div>
-                  <Label className="mb-0.5 sm:mb-1 block">ORDER INFORMATION</Label>
-                  <ul className="space-y-1 text-xs">
-                    <li className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">FARE TYPE</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                  <SectionHeading title="Order Information" icon={Briefcase} className="mb-2" />
+                  <div className="space-y-2 rounded-lg border border-gray-200/80 bg-gray-50/50 p-2.5 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex justify-between text-xs leading-tight">
+                      <span className="text-gray-600 dark:text-gray-400">Fare Type</span>
+                      <span className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                         {firstItem?.fareType ?? '-'}
                       </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">REFUNDABLE</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                    </div>
+                    <div className="flex justify-between text-xs leading-tight">
+                      <span className="text-gray-600 dark:text-gray-400">Refundable</span>
+                      <span
+                        className={`text-xs font-medium leading-tight ${
+                          firstItem?.refundable
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-600 dark:text-gray-300'
+                        }`}
+                      >
                         {firstItem?.refundable ? 'Yes' : 'No'}
                       </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">VALIDATING CARRIER</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
+                    </div>
+                    <div className="flex justify-between text-xs leading-tight">
+                      <span className="text-gray-600 dark:text-gray-400">Validating Carrier</span>
+                      <span className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                         {firstItem?.validatingCarrier ?? '-'}
                       </span>
-                    </li>
-                  </ul>
+                    </div>
+                    {createdByName && (
+                      <div className="flex justify-between text-xs leading-tight">
+                        <span className="text-gray-600 dark:text-gray-400">Booked By</span>
+                        <span className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
+                          {createdByName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>
 
-            {/* 7. Contact Information + Print */}
+            {/* Contact Information - Standard Ticket Style */}
             <Card>
-              <h2
-                className={`${GeistSans.className} mb-1.5 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-              >
-                Contact Information
-              </h2>
-              <div className="flex flex-wrap gap-4 sm:gap-6">
-                <div>
-                  <Label>EMAIL</Label>
-                  <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+              <SectionHeading title="Contact Information" icon={Phone} />
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2 dark:border-white/10 dark:bg-white/5">
+                  <Label className="mb-0.5 text-xs">EMAIL ADDRESS</Label>
+                  <p className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                     {contact.emailAddress}
                   </p>
                 </div>
-                <div>
-                  <Label>PHONE</Label>
-                  <p className="mt-0.5 text-sm font-semibold leading-tight text-gray-900 dark:text-white">
+                <div className="rounded-lg border border-gray-200/80 bg-gray-50/50 p-2 dark:border-white/10 dark:bg-white/5">
+                  <Label className="mb-0.5 text-xs">PHONE NUMBER</Label>
+                  <p className="text-xs font-medium leading-tight text-gray-600 dark:text-gray-300">
                     {contact.phoneNumber}
                   </p>
                 </div>
               </div>
             </Card>
-
-            <div className="print:hidden">
-              <button
-                type="button"
-                onClick={handlePrint}
-                className={`${GeistSans.className} w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200`}
-              >
-                Print Ticket
-              </button>
-            </div>
           </div>
 
-          {/* Right column: Actions card (like Service Fee card in top right) */}
-          <aside className="print:hidden w-full shrink-0 lg:w-[220px] lg:sticky lg:top-4">
+          {/* Right column: Actions sidebar */}
+          <aside className="ticket-actions w-full shrink-0 print:hidden lg:sticky lg:top-4 lg:w-[300px]">
             <Card>
-              <h2
-                className={`${GeistSans.className} mb-3 flex items-center gap-2 text-base font-bold leading-tight text-gray-900 dark:text-white`}
-              >
-                <span className="text-primary">Actions</span>
-              </h2>
-              <div className="flex flex-col gap-2">
+              <SectionHeading title="Quick Actions" icon={Ticket} />
+              <div className="flex flex-col gap-2.5">
                 <button
                   type="button"
                   onClick={() => void handleRefresh()}
                   disabled={refreshLoading}
-                  className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:pointer-events-none`}
+                  className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 dark:border-primary/45 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 disabled:opacity-50 disabled:pointer-events-none`}
                 >
                   {refreshLoading ? (
                     <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
@@ -1650,7 +1778,7 @@ export default function BookingOrderPage() {
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+                  className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 dark:border-primary/45 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20`}
                 >
                   <Printer className="h-4 w-4 shrink-0" />
                   Print & Download
@@ -1675,7 +1803,7 @@ export default function BookingOrderPage() {
                     type="button"
                     onClick={openCancelConfirmModal}
                     disabled={actionLoading !== null}
-                    className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-600 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-500 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:pointer-events-none`}
+                    className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 dark:border-primary/45 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20 disabled:opacity-50 disabled:pointer-events-none`}
                   >
                     {actionLoading === 'cancel' ? (
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
@@ -1695,7 +1823,7 @@ export default function BookingOrderPage() {
                       className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline ${
                         refundChangeFlightDisabled
                           ? 'border-gray-300 bg-gray-100 text-gray-500 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-500'
-                          : 'border-orange-600 bg-white text-orange-600 hover:bg-orange-50 dark:border-orange-500 dark:bg-transparent dark:text-orange-400 dark:hover:bg-orange-950/30'
+                          : 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
                       }`}
                     >
                       <RotateCcw className="h-4 w-4 shrink-0" />
@@ -1711,7 +1839,7 @@ export default function BookingOrderPage() {
                       className={`${GeistSans.className} inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 disabled:no-underline ${
                         refundChangeFlightDisabled
                           ? 'border-gray-300 bg-gray-100 text-gray-500 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-500'
-                          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
+                          : 'border-primary/35 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/45 dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/20'
                       }`}
                     >
                       <Plane className="h-4 w-4 shrink-0" />
@@ -1724,6 +1852,72 @@ export default function BookingOrderPage() {
           </aside>
         </div>
       </div>
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0.5in;
+          }
+
+          @page :first {
+            size: A4 portrait;
+            margin: 0.5in;
+          }
+
+          html,
+          body {
+            background: #fff !important;
+            color: #111827 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          header,
+          footer,
+          .ticket-actions,
+          .print\\:hidden,
+          .fixed.top-14.bottom-0.left-0.z-30,
+          .flex.pt-14.relative.z-10.min-h-screen > .hidden.md\\:block {
+            display: none !important;
+          }
+
+          .flex.pt-14.relative.z-10.min-h-screen {
+            padding-top: 0 !important;
+          }
+
+          main {
+            min-height: auto !important;
+            background: #fff !important;
+          }
+
+          .ticket-document {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .ticket-main-grid {
+            display: block !important;
+            gap: 0 !important;
+          }
+
+          .ticket-card {
+            break-inside: auto;
+            page-break-inside: auto;
+            border: 1px solid #d1d5db !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            margin-bottom: 3mm;
+            overflow: visible !important;
+            page-break-after: auto;
+          }
+
+          .ticket-card::before {
+            content: none !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
